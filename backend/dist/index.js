@@ -120,6 +120,7 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         }
     }
 }));
+/////// provide proper format to the messages like {type:"Error/Message", sender:null/someone, receiver:someone }
 const wss = new ws_1.WebSocketServer({ server });
 const onlineUsers = new Map([]);
 const totalUsers = new Map([]);
@@ -130,12 +131,20 @@ wss.on("connection", function (socket, req) {
             const currentUser = jsonwebtoken_1.default.verify(token, process.env.SecretKey);
             const OfflineMessages = yield prisma.messages.findMany({
                 where: {
-                    receiver: currentUser.email
+                    OR: [
+                        {
+                            receiver: currentUser.email
+                        },
+                        {
+                            sender: currentUser.email
+                        }
+                    ]
                 },
                 orderBy: {
                     createdAt: "asc"
                 }
             });
+            socket.send(JSON.stringify(OfflineMessages));
             console.log(OfflineMessages); /// remove this as welll
             // socket.send({}) //// we have to convert the object into strings as well ..it sends strings only
             onlineUsers.set(currentUser.email, socket);
@@ -143,12 +152,30 @@ wss.on("connection", function (socket, req) {
             socket.send("Connected. Ready To Chat 🚀");
             socket.on("message", (e) => {
                 const messageObj = JSON.parse(e.toString());
+                if (!messageObj.content || !messageObj.receiver) {
+                    socket.send("Receiver or content is missing");
+                    socket.close();
+                }
                 const receiver = messageObj.receiver;
-                totalUsers.forEach((value, key) => {
+                totalUsers.forEach((value, key) => __awaiter(this, void 0, void 0, function* () {
                     if (key === receiver) {
                         value.send(messageObj.content);
+                        try {
+                            yield prisma.messages.create({
+                                data: {
+                                    sender: currentUser.email,
+                                    receiver: key,
+                                    content: messageObj.content
+                                }
+                            });
+                        }
+                        catch (error) {
+                            socket.send("Db error");
+                            socket.close();
+                        }
+                        return;
                     }
-                });
+                }));
                 if (!totalUsers.has(messageObj.receiver)) {
                     socket.send("No such users found. Please use frontend interface only");
                 }
@@ -157,6 +184,7 @@ wss.on("connection", function (socket, req) {
                 onlineUsers.forEach((value, key) => {
                     if (value === socket) {
                         onlineUsers.delete(key);
+                        return;
                     }
                 });
                 console.log({ onlineUsers, totalUsers }); //// remove this
