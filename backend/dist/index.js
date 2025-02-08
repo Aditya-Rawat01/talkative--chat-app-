@@ -23,7 +23,7 @@ const app = (0, express_1.default)();
 const prisma = new client_1.PrismaClient();
 app.use(express_1.default.json());
 app.use((0, cors_1.default)());
-const server = app.listen(3000);
+const server = app.listen(5000);
 app.get("/", (req, res) => {
     res.json({
         "msg": "hello"
@@ -31,6 +31,7 @@ app.get("/", (req, res) => {
 });
 app.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { username, password, email } = req.body;
+    console.log({ username, password, email });
     const success = zodSchema_1.signupSchema.safeParse({ username, password, email });
     if (!username || !password || !email) {
         res.status(411).json({
@@ -50,7 +51,7 @@ app.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 data: {
                     username,
                     password,
-                    email: email
+                    email
                 }
             });
             const token = jsonwebtoken_1.default.sign({ email }, process.env.SecretKey, { expiresIn: '24h' });
@@ -80,7 +81,7 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
     if (success.error) {
         res.status(411).json({
-            "msg": success.error.issues
+            "msg": success.error.issues[0].message
         });
         return;
     }
@@ -88,7 +89,7 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         try {
             const userFound = yield prisma.user.findFirst({
                 where: {
-                    email: email,
+                    email,
                 }
             });
             if (userFound) {
@@ -122,14 +123,13 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 }));
 /////// provide proper format to the messages like {type:"Error/Message", sender:null/someone, receiver:someone }
 const wss = new ws_1.WebSocketServer({ server });
-const onlineUsers = new Map([]);
 const totalUsers = new Map([]);
 wss.on("connection", function (socket, req) {
     return __awaiter(this, void 0, void 0, function* () {
         const token = req.headers.authorization;
         try {
             const currentUser = jsonwebtoken_1.default.verify(token, process.env.SecretKey);
-            const OfflineMessages = yield prisma.messages.findMany({
+            const offlineMessages = yield prisma.messages.findMany({
                 where: {
                     OR: [
                         {
@@ -144,59 +144,59 @@ wss.on("connection", function (socket, req) {
                     createdAt: "asc"
                 }
             });
-            socket.send(JSON.stringify(OfflineMessages));
-            console.log(OfflineMessages); /// remove this as welll
+            socket.send(JSON.stringify({ type: "message", message: offlineMessages }));
+            console.log(offlineMessages); /// remove this as welll
             // socket.send({}) //// we have to convert the object into strings as well ..it sends strings only
-            onlineUsers.set(currentUser.email, socket);
-            totalUsers.set(currentUser.email, socket);
-            socket.send("Connected. Ready To Chat 🚀");
-            socket.on("message", (e) => {
+            totalUsers.set(currentUser.email, { WebSocket: socket, active: true });
+            socket.send(JSON.stringify({ type: "Info", message: "Connected. Ready To Chat 🚀" }));
+            //socket.send(JSON.stringify({type:"Info",message:totalUsers})) this doesnt work . this only sends to current socket only    
+            socket.on("message", (e) => __awaiter(this, void 0, void 0, function* () {
                 const messageObj = JSON.parse(e.toString());
                 if (!messageObj.content || !messageObj.receiver) {
-                    socket.send("Receiver or content is missing");
+                    socket.send(JSON.stringify({ type: "error", message: "Receiver or content is missing" }));
                     socket.close();
+                }
+                try {
+                    yield prisma.messages.create({
+                        data: {
+                            sender: currentUser.email,
+                            receiver: messageObj.receiver,
+                            content: messageObj.content
+                        }
+                    });
+                }
+                catch (error) {
+                    socket.send(JSON.stringify({ type: "error", message: "Db Error" }));
+                    return; /// add return statement instead of socket.close
                 }
                 const receiver = messageObj.receiver;
                 totalUsers.forEach((value, key) => __awaiter(this, void 0, void 0, function* () {
                     if (key === receiver) {
-                        value.send(messageObj.content);
-                        try {
-                            yield prisma.messages.create({
-                                data: {
-                                    sender: currentUser.email,
-                                    receiver: key,
-                                    content: messageObj.content
-                                }
-                            });
-                        }
-                        catch (error) {
-                            socket.send("Db error");
-                            socket.close();
-                        }
+                        value.WebSocket.send(JSON.stringify({ type: "message", message: messageObj.content }));
                         return;
                     }
                 }));
                 if (!totalUsers.has(messageObj.receiver)) {
-                    socket.send("No such users found. Please use frontend interface only");
+                    socket.send(JSON.stringify({ type: "error", message: "No such users found. Please use frontend interface only" }));
                 }
-            });
+            }));
             socket.on("close", function () {
-                onlineUsers.forEach((value, key) => {
-                    if (value === socket) {
-                        onlineUsers.delete(key);
+                totalUsers.forEach((value, key) => {
+                    if (value.WebSocket === socket) {
+                        value.active = false;
                         return;
                     }
                 });
-                console.log({ onlineUsers, totalUsers }); //// remove this
+                console.log({ totalUsers }); //// remove this
             });
         }
         catch (error) {
             if (error.name === "TokenExpiredError") {
-                socket.send("Token Expired. Sign in again");
+                socket.send(JSON.stringify({ type: "error", message: "Token expired. Sign in again." }));
                 socket.close();
             }
             else {
-                socket.send("Invalid Token. Sign in again");
+                socket.send(JSON.stringify({ type: "error", message: "Invalid Token. Sign in again." }));
                 socket.send(JSON.stringify(error));
                 socket.close();
             }

@@ -9,7 +9,7 @@ const app=express()
 const prisma=new PrismaClient()
 app.use(express.json())
 app.use(cors())
-const server=app.listen(3000)
+const server=app.listen(5000)
 app.get("/",(req,res)=>{
     res.json({
         "msg":"hello"
@@ -36,7 +36,7 @@ app.post("/signup",async (req,res)=>{
             data:{
                 username,
                 password,
-                email:email
+                email
             }})
         const token=jwt.sign({email},process.env.SecretKey as string,{expiresIn:'24h'})
         res.json({
@@ -67,14 +67,14 @@ app.post("/signin",async(req,res)=>{
    }
     if (success.error) {
        res.status(411).json({
-           "msg":success.error.issues
+           "msg":success.error.issues[0].message
        })
        return;
     } else {
        try {
            const userFound=await prisma.user.findFirst({
                where:{
-                   email:email,
+                   email,
                }})
             if (userFound) {
                 if (password!==userFound.password) {
@@ -155,7 +155,7 @@ wss.on("connection",async function(socket,req) {
             }) 
         } catch (error) {
             socket.send(JSON.stringify({type:"error", message:"Db Error"}))
-            socket.close()
+            return /// add return statement instead of socket.close
         }
         const receiver=messageObj.receiver
         totalUsers.forEach(async(value,key)=>{
