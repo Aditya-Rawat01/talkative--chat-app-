@@ -31,7 +31,6 @@ app.get("/", (req, res) => {
 });
 app.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { username, password, email } = req.body;
-    console.log({ username, password, email });
     const success = zodSchema_1.signupSchema.safeParse({ username, password, email });
     if (!username || !password || !email) {
         res.status(411).json({

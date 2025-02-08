@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { httpURI } from "../URI";
 import { useMutation } from "@tanstack/react-query";
 
@@ -11,8 +11,8 @@ async function signup(data:{username:string,email:string,password:string}) {
               password:data.password
             })
         return res.data.msg  
-    } catch (error) {
-        throw error
+    } catch (error:any) {
+        throw new Error(error.response.data.msg || "Signup Failed. Please Try Again")
     }
     }
 

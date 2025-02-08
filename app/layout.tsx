@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Raleway, Poppins } from "next/font/google";
 
-import ReactQueryProvider from "./components/queryClientProvider";
+import ReactQueryProvider from "./myComponents/queryClientProvider";
+import { Toaster } from "@/components/ui/sonner";
 const raleway= Raleway({
   subsets:['latin'],
   variable:"--font-secondary"
@@ -30,6 +31,7 @@ export default function RootLayout({
       >
        <ReactQueryProvider>
           {children}
+          <Toaster duration={3000}/>
        </ReactQueryProvider> 
         
       </body>
