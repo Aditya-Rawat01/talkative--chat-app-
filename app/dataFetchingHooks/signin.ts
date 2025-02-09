@@ -9,6 +9,7 @@ async function signin(data:{username:string,email:string,password:string}) {
               email:data.email,
               password:data.password
             })
+            localStorage.setItem("token",res.data.token)
         return res.data.msg  
     } catch (error:any) {
         console.log(error.response.data.msg)

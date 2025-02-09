@@ -2,7 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+}
 :root {
     --font-primary: 'Poppins', sans-serif;
     --font-secondary: 'Raleway', sans-serif;

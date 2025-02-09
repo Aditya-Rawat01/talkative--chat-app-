@@ -107,7 +107,7 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             }
             else {
                 res.status(403).json({
-                    "msg": "User doesn't exists. Try Signing Up",
+                    "msg": "User doesn't exist. Try Signing Up",
                 });
                 return;
             }

@@ -10,6 +10,7 @@ async function signup(data:{username:string,email:string,password:string}) {
               email:data.email,
               password:data.password
             })
+            localStorage.setItem("token",res.data.token)
         return res.data.msg  
     } catch (error:any) {
         throw new Error(error.response.data.msg || "Signup Failed. Please Try Again")
