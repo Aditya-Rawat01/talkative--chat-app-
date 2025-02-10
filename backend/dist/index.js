@@ -125,9 +125,12 @@ const wss = new ws_1.WebSocketServer({ server });
 const totalUsers = new Map([]);
 wss.on("connection", function (socket, req) {
     return __awaiter(this, void 0, void 0, function* () {
-        const token = req.headers.authorization;
+        const token = req.headers["sec-websocket-protocol"];
         try {
             const currentUser = jsonwebtoken_1.default.verify(token, process.env.SecretKey);
+            totalUsers.set(currentUser.email, { WebSocket: socket, active: true });
+            console.log("this user is active:");
+            console.log(currentUser.email, { active: true });
             const offlineMessages = yield prisma.messages.findMany({
                 where: {
                     OR: [
@@ -143,12 +146,21 @@ wss.on("connection", function (socket, req) {
                     createdAt: "asc"
                 }
             });
-            socket.send(JSON.stringify({ type: "message", message: offlineMessages }));
-            console.log(offlineMessages); /// remove this as welll
+            //socket.send(JSON.stringify({ type: "offlineMessages", message: offlineMessages}))
             // socket.send({}) //// we have to convert the object into strings as well ..it sends strings only
-            totalUsers.set(currentUser.email, { WebSocket: socket, active: true });
-            socket.send(JSON.stringify({ type: "Info", message: "Connected. Ready To Chat 🚀" }));
-            //socket.send(JSON.stringify({type:"Info",message:totalUsers})) this doesnt work . this only sends to current socket only    
+            totalUsers.forEach((value, key) => {
+                if (value.active) {
+                    value.WebSocket.send(JSON.stringify({
+                        type: "UPDATE_USERS",
+                        users: Array.from(totalUsers.entries())
+                            .filter(([id, data]) => id !== key)
+                            .map(([id, data]) => ({
+                            username: id,
+                            active: data.active
+                        }))
+                    }));
+                }
+            });
             socket.on("message", (e) => __awaiter(this, void 0, void 0, function* () {
                 const messageObj = JSON.parse(e.toString());
                 if (!messageObj.content || !messageObj.receiver) {
@@ -180,13 +192,31 @@ wss.on("connection", function (socket, req) {
                 }
             }));
             socket.on("close", function () {
-                totalUsers.forEach((value, key) => {
-                    if (value.WebSocket === socket) {
-                        value.active = false;
-                        return;
-                    }
-                });
-                console.log({ totalUsers }); //// remove this
+                var _a;
+                const userEmail = (_a = Array.from(totalUsers.entries())
+                    .find(([_, data]) => data.WebSocket === socket)) === null || _a === void 0 ? void 0 : _a[0];
+                if (userEmail) {
+                    totalUsers.set(userEmail, {
+                        WebSocket: socket,
+                        active: false
+                    });
+                    console.log("User become offline");
+                    console.log(userEmail, { active: false });
+                    totalUsers.forEach((value, key) => {
+                        if (value.active) {
+                            value.WebSocket.send(JSON.stringify({
+                                type: "UPDATE_USERS",
+                                users: Array.from(totalUsers.entries())
+                                    .filter(([id, _]) => id !== key)
+                                    .map(([id, data]) => ({
+                                    username: id,
+                                    active: data.active
+                                }))
+                            }));
+                        }
+                    });
+                }
+                //// remove this
             });
         }
         catch (error) {

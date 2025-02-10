@@ -114,9 +114,12 @@ app.post("/signin",async(req,res)=>{
 const wss=new WebSocketServer({server})
 const totalUsers= new Map<string,{WebSocket:WebSocket,active:boolean}>([])
 wss.on("connection",async function(socket,req) {
-    const token=req.headers.authorization
+    const token=req.headers["sec-websocket-protocol"]
     try {
     const currentUser=jwt.verify(token as string,process.env.SecretKey as string)
+    totalUsers.set((currentUser as JwtPayload).email,{WebSocket:socket,active:true})
+    console.log("this user is active:")
+    console.log((currentUser as JwtPayload).email,{active:true})
     const offlineMessages=await prisma.messages.findMany({
         
         where:{
@@ -133,12 +136,24 @@ wss.on("connection",async function(socket,req) {
             createdAt: "asc"
         }
     })
-    socket.send(JSON.stringify({ type: "message", message: offlineMessages}))
-    console.log(offlineMessages)     /// remove this as welll
+    //socket.send(JSON.stringify({ type: "offlineMessages", message: offlineMessages}))
+    
     // socket.send({}) //// we have to convert the object into strings as well ..it sends strings only
-    totalUsers.set((currentUser as JwtPayload).email,{WebSocket:socket,active:true})
-    socket.send(JSON.stringify({type:"Info",message:"Connected. Ready To Chat 🚀"}))
-    //socket.send(JSON.stringify({type:"Info",message:totalUsers})) this doesnt work . this only sends to current socket only    
+    
+    totalUsers.forEach((value,key) => {
+        if (value.active) {
+            value.WebSocket.send(JSON.stringify({
+                type: "UPDATE_USERS",
+                users: Array.from(totalUsers.entries())
+                .filter(([id, data]) => id!==key)
+                .map(([id, data]) => ({
+                    username:id,
+                    active: data.active
+                }))
+            }));
+        }    
+    });
+    
     socket.on("message",async(e)=>{
         const messageObj:{content:string, receiver:string}=JSON.parse(e.toString())
         if (!messageObj.content || !messageObj.receiver) {
@@ -169,15 +184,34 @@ wss.on("connection",async function(socket,req) {
         }
     })
     socket.on("close",function() {
-        totalUsers.forEach((value,key)=>{
-            if (value.WebSocket===socket) {
-                value.active=false
-                return
+        const userEmail = Array.from(totalUsers.entries())
+        .find(([_, data]) => data.WebSocket === socket)?.[0];
+    
+    if (userEmail) {
+        totalUsers.set(userEmail, {
+            WebSocket: socket,
+            active: false
+        }
+    )
+        console.log("User become offline")
+        console.log(userEmail,{active:false});
+
+        totalUsers.forEach((value, key) => {
+            if (value.active) {
+                value.WebSocket.send(JSON.stringify({
+                    type: "UPDATE_USERS",
+                    users: Array.from(totalUsers.entries())
+                        .filter(([id, _]) => id !== key)
+                        .map(([id, data]) => ({
+                            username: id,
+                            active: data.active
+                        }))
+                }));
             }
-            
-        })
+        });
+    }
         
-        console.log({totalUsers})    //// remove this
+           //// remove this
     })
     
     
