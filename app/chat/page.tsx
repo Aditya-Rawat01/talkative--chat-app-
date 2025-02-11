@@ -50,7 +50,7 @@ export default function Chat() {
             
             if (content.type==="offlineMessages") { // handles offline messages
                 setMessages(content.message)
-                //console.log(content.message)
+                console.log(content.message)
             }
             else if (content.type==="message") { // handle realtime messages
                 setMessages((prev)=>[...(prev??[]),content.message])
@@ -58,8 +58,7 @@ export default function Chat() {
             }
             else if(content.type==="UPDATE_USERS") {
                 setActiveUsers(content.users)
-                console.log(content.users)
-            }
+                }
            
             
         }
@@ -70,6 +69,7 @@ export default function Chat() {
             
         }
     },[])
+    const individiualMessages=messages?.filter((index)=>index.receiver===individual?.username || index.sender===individual?.username)
     //state ke upr chats khulegi / nya route bnaane ki jaroorat ni.
     // websockets logic. Receive all the message and sort it according to the chats as well.
     //move the div to different component and have it receive the message as props.
@@ -108,7 +108,9 @@ export default function Chat() {
                                 </p>
                                 
                                 <div className="h-[calc(100vh-128px)] overflow-auto scroll-smooth hide-scrollbar">
-                                <p>Scrollable div with messages</p>
+                                {individiualMessages?.map((index)=><div className={`p-1 w-full  text-black flex px-2  ${index.sender===individual?.username?"justify-start ":"justify-end "}`}>
+                                    <p className={`p-2 rounded-full text-wrap max-w-[85%] ${index.sender===individual?.username?"bg-white text-black rounded-bl-none":"bg-black text-white rounded-br-none"}`}>{index.content}</p>
+                                    </div>)}
                                 </div>
                                 <div className="h-12 mx-2 text-black rounded-full flex items-center justify-center relative">
                                     <textarea
@@ -136,7 +138,9 @@ export default function Chat() {
                                 <span onClick={()=>setWindowstate(false)} className="bg-black h-8 w-8 absolute right-3 flex items-center justify-center rounded-full">x</span>
                                 </p>
                                 <div className="h-[calc(100vh-128px)] overflow-auto scroll-smooth hide-scrollbar">
-                                <p>Scrollable div with messages</p>
+                                {individiualMessages?.map((index)=><div className={`p-1 w-full  text-black flex px-2  ${index.sender===individual?.username?"justify-start ":"justify-end "}`}>
+                                    <p className={`p-2 rounded-full text-wrap max-w-[85%] ${index.sender===individual?.username?"bg-white text-black rounded-bl-none":"bg-black text-white rounded-br-none"}`}>{index.content}</p>
+                                    </div>)}
                                 
                                 </div>
                                 <div className="h-12 m-2 text-black rounded-full flex items-center justify-center relative">
