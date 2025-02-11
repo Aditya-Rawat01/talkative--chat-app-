@@ -10,7 +10,7 @@ import Modal from "../myComponents/modal"
 import Image from "next/image"
 import chatbg from "@/public/chatbg.png"
 import { wsURI } from "../URI"
-
+import jwt from "jsonwebtoken"
 
 interface activeUsers {
     username:string,
@@ -30,9 +30,7 @@ export default function Chat() {
         createdAt: Date;
     }[]|undefined>()
     const [activeUsers,setActiveUsers]=useState<activeUsers[]>()
-    function sendMessage() {
 
-    }
     useEffect(()=>{
         const token=sessionStorage.getItem("token")
         if (!token) {
@@ -47,19 +45,19 @@ export default function Chat() {
         }
         ws.onmessage=(e)=>{
             const content=JSON.parse(e.data)
-            
             if (content.type==="offlineMessages") { // handles offline messages
                 setMessages(content.message)
-                console.log(content.message)
             }
             else if (content.type==="message") { // handle realtime messages
-                setMessages((prev)=>[...(prev??[]),content.message])
+                setMessages((prev)=>[...(prev??[]),{id:content.id,content:content.message,sender:content.sender,receiver:content.receiver,createdAt:content.createdAt}])
                 
             }
             else if(content.type==="UPDATE_USERS") {
                 setActiveUsers(content.users)
                 }
-           
+            else if (content.type==="error") {
+                requestAnimationFrame(()=>toast(content.message))
+            }
             
         }
         return () => {
@@ -69,13 +67,20 @@ export default function Chat() {
             
         }
     },[])
+    // optimize rerenders
     const individiualMessages=messages?.filter((index)=>index.receiver===individual?.username || index.sender===individual?.username)
     //state ke upr chats khulegi / nya route bnaane ki jaroorat ni.
     // websockets logic. Receive all the message and sort it according to the chats as well.
     //move the div to different component and have it receive the message as props.
     function SendMessage() {
         if (text.trim()!=="") {
-            console.log(text.trim())
+            const date=new Date()
+            const hrs=date.getHours()
+            const min=date.getMinutes()
+            const senderToken=sessionStorage.getItem("token")
+            const senderObj:any=jwt.decode(senderToken as string)
+            const sender=senderObj?.email
+            socket?.send(JSON.stringify({type:"message",content:text,sender:sender,receiver:individual?.username,time:hrs+":"+min}))
             setText("")
         }
         
@@ -108,7 +113,7 @@ export default function Chat() {
                                 </p>
                                 
                                 <div className="h-[calc(100vh-128px)] overflow-auto scroll-smooth hide-scrollbar">
-                                {individiualMessages?.map((index)=><div className={`p-1 w-full  text-black flex px-2  ${index.sender===individual?.username?"justify-start ":"justify-end "}`}>
+                                {individiualMessages?.map((index)=><div key={index.id} className={`p-1 w-full  text-black flex px-2  ${index.sender===individual?.username?"justify-start ":"justify-end "}`}>
                                     <p className={`p-2 rounded-full text-wrap max-w-[85%] ${index.sender===individual?.username?"bg-white text-black rounded-bl-none":"bg-black text-white rounded-br-none"}`}>{index.content}</p>
                                     </div>)}
                                 </div>
@@ -118,7 +123,7 @@ export default function Chat() {
                                     value={text}
                                     onChange={(e) => setText(e.target.value)}
                                     placeholder="Send Message"/>
-                                    <Image src={sendBg} alt="send" width={24} className="absolute right-3" onClick={SendMessage}/>
+                                    <Image src={sendBg} alt="send" width={24} className={`absolute right-3 ${text?"":"opacity-35"}`} onClick={SendMessage} />
                                 </div>
                             </div>
                         </div>    
@@ -138,7 +143,7 @@ export default function Chat() {
                                 <span onClick={()=>setWindowstate(false)} className="bg-black h-8 w-8 absolute right-3 flex items-center justify-center rounded-full">x</span>
                                 </p>
                                 <div className="h-[calc(100vh-128px)] overflow-auto scroll-smooth hide-scrollbar">
-                                {individiualMessages?.map((index)=><div className={`p-1 w-full  text-black flex px-2  ${index.sender===individual?.username?"justify-start ":"justify-end "}`}>
+                                {individiualMessages?.map((index)=><div key={index.id} className={`p-1 w-full  text-black flex px-2  ${index.sender===individual?.username?"justify-start ":"justify-end "}`}>
                                     <p className={`p-2 rounded-full text-wrap max-w-[85%] ${index.sender===individual?.username?"bg-white text-black rounded-bl-none":"bg-black text-white rounded-br-none"}`}>{index.content}</p>
                                     </div>)}
                                 
@@ -149,7 +154,7 @@ export default function Chat() {
                                     value={text}
                                     onChange={(e) => setText(e.target.value)}
                                     placeholder="Send Message"/>
-                                    <Image src={sendBg} alt="send" width={24} className="absolute right-3" onClick={SendMessage}/>
+                                    <Image src={sendBg} alt="send" width={24} className={`absolute right-3 ${text?"":"opacity-35"}`} onClick={SendMessage}/>
                                 </div>
                     </div>
                 </div>

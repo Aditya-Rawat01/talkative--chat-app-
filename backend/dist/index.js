@@ -165,30 +165,31 @@ wss.on("connection", function (socket, req) {
                 const messageObj = JSON.parse(e.toString());
                 if (!messageObj.content || !messageObj.receiver) {
                     socket.send(JSON.stringify({ type: "error", message: "Receiver or content is missing" }));
-                    socket.close();
+                    return;
                 }
                 try {
-                    yield prisma.messages.create({
+                    const message = yield prisma.messages.create({
                         data: {
                             sender: currentUser.email,
                             receiver: messageObj.receiver,
                             content: messageObj.content
                         }
                     });
+                    const receiver = messageObj.receiver;
+                    totalUsers.forEach((value, key) => __awaiter(this, void 0, void 0, function* () {
+                        if (key === receiver || key === messageObj.sender) {
+                            value.WebSocket.send(JSON.stringify({ type: "message", message: messageObj.content, receiver: messageObj.receiver, sender: messageObj.sender, createdAt: message.createdAt }));
+                            return;
+                        }
+                    }));
+                    if (!totalUsers.has(receiver)) {
+                        socket.send(JSON.stringify({ type: "error", message: "No such users found. Please use frontend interface only" }));
+                        return;
+                    }
                 }
                 catch (error) {
                     socket.send(JSON.stringify({ type: "error", message: "Db Error" }));
                     return; /// add return statement instead of socket.close
-                }
-                const receiver = messageObj.receiver;
-                totalUsers.forEach((value, key) => __awaiter(this, void 0, void 0, function* () {
-                    if (key === receiver) {
-                        value.WebSocket.send(JSON.stringify({ type: "message", message: messageObj.content }));
-                        return;
-                    }
-                }));
-                if (!totalUsers.has(messageObj.receiver)) {
-                    socket.send(JSON.stringify({ type: "error", message: "No such users found. Please use frontend interface only" }));
                 }
             }));
             socket.on("close", function () {
@@ -225,6 +226,7 @@ wss.on("connection", function (socket, req) {
                 socket.close();
             }
             else {
+                console.log(error);
                 socket.send(JSON.stringify({ type: "error", message: "Invalid Token. Sign in again." }));
                 socket.send(JSON.stringify(error));
                 socket.close();
