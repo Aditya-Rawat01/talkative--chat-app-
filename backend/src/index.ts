@@ -136,8 +136,7 @@ wss.on("connection",async function(socket,req) {
             createdAt: "asc"
         }
     })
-    //socket.send(JSON.stringify({ type: "offlineMessages", message: offlineMessages}))
-    
+    socket.send(JSON.stringify({ type: "offlineMessages", message: offlineMessages}))
     // socket.send({}) //// we have to convert the object into strings as well ..it sends strings only
     
     totalUsers.forEach((value,key) => {

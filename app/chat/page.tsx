@@ -11,19 +11,15 @@ import Image from "next/image"
 import chatbg from "@/public/chatbg.png"
 import { wsURI } from "../URI"
 
-const users=[
-    {username:"Aditya", status:"online",avatar:"mr. bean"},
-    {username:"Test 1", status:"online",avatar:"bheem"},
-    {username:"Test 2", status:"offline",avatar:"chutki"}
-]
-interface individualInterface {
+
+interface activeUsers {
     username:string,
     active:boolean,
 }
 export default function Chat() {
     const router=useRouter()
     const [windowState,setWindowstate]=useState<boolean|string>(false)
-    const [individual,setIndividual]=useState<individualInterface|null>()
+    const [individual,setIndividual]=useState<{username:string}|null>()
     const [text, setText] = useState("");
     const [socket,setSocket]=useState<WebSocket|undefined>()
     const [messages,setMessages]=useState<{
@@ -33,7 +29,7 @@ export default function Chat() {
         content: string;
         createdAt: Date;
     }[]|undefined>()
-    const [activeUsers,setActiveUsers]=useState([{}])
+    const [activeUsers,setActiveUsers]=useState<activeUsers[]>()
     function sendMessage() {
 
     }
@@ -89,9 +85,9 @@ export default function Chat() {
         <div className={`${windowState?"hidden sm:block":"block"}`}><Topbar/></div>
         <div className={`w-full ${windowState?"h-full sm:h-[calc(100vh-48px)]":"h-[calc(100vh-48px)]"} sm:flex`}>
         <div className={`w-full sm:w-[320px] md:w-[400px] lg:w-[500px] xl:w-[600px] h-full flex flex-col items-center gap-2 ${!windowState?"p-3":"sm:p-3"}`}>
-            {activeUsers.map((key:any,value)=>{
+            {activeUsers?.map((key:any,value)=>{
                 return (
-                        <div key={value} className={`${!windowState? "flex":"hidden sm:flex"} w-full justify-center cursor-pointer`} onClick={()=>setIndividual({username:key.username, active:key.active})}>
+                        <div key={value} className={`${!windowState? "flex":"hidden sm:flex"} w-full justify-center cursor-pointer`} onClick={()=>setIndividual({username:key.username})}>
                             <Modal username={key.username} active={key.active} setChatWindow={setWindowstate}/>
                         </div>
                    
@@ -106,9 +102,11 @@ export default function Chat() {
                             <div className="absolute w-full z-20 text-white">
                                 <p className="h-16 w-full flex items-center justify-center relative text-2xl backdrop-blur-[1px]">
                                     {individual?.username}
-
+                                    
+                                {<span className={` text-sm absolute bottom-0 ${(activeUsers?.find((key:any,value)=>key.username===individual?.username)?.active)?"text-green-600":"text-gray-500"}`}>{((activeUsers?.find((key:any,value)=>key.username===individual?.username)?.active))?"online":"offline"}</span>}
                                 <span onClick={()=>setWindowstate(false)} className="bg-black h-8 w-8 absolute right-3 flex items-center justify-center rounded-full">x</span>
                                 </p>
+                                
                                 <div className="h-[calc(100vh-128px)] overflow-auto scroll-smooth hide-scrollbar">
                                 <p>Scrollable div with messages</p>
                                 </div>
@@ -133,6 +131,8 @@ export default function Chat() {
                     <div className="absolute z-20 w-full h-full -top-12 text-white">
                         <p className="h-16 w-full flex items-center justify-center relative text-2xl backdrop-blur-[1px]">
                                     {individual?.username}
+                                    {<span className={` text-sm absolute bottom-0 ${((activeUsers?.find((key:any,value)=>key.username===individual?.username)?.active))?"text-green-600":"text-gray-500"}`}>{(activeUsers?.find((key:any,value)=>key.username===individual?.username)?.active)?"online":"offline"}</span>}
+
                                 <span onClick={()=>setWindowstate(false)} className="bg-black h-8 w-8 absolute right-3 flex items-center justify-center rounded-full">x</span>
                                 </p>
                                 <div className="h-[calc(100vh-128px)] overflow-auto scroll-smooth hide-scrollbar">
