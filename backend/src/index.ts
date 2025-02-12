@@ -118,8 +118,6 @@ wss.on("connection",async function(socket,req) {
     try {
     const currentUser=jwt.verify(token as string,process.env.SecretKey as string)
     totalUsers.set((currentUser as JwtPayload).email,{WebSocket:socket,active:true})
-    console.log("this user is active:")
-    console.log((currentUser as JwtPayload).email,{active:true})
     const offlineMessages=await prisma.messages.findMany({
         
         where:{
@@ -195,8 +193,7 @@ wss.on("connection",async function(socket,req) {
             active: false
         }
     )
-        console.log("User become offline")
-        console.log(userEmail,{active:false});
+       
 
         totalUsers.forEach((value, key) => {
             if (value.active) {
@@ -231,7 +228,6 @@ wss.on("connection",async function(socket,req) {
             socket.close()
         }
         else {
-            console.log(error)
             socket.send(JSON.stringify({ type: "error", message: "Invalid Token. Sign in again." }))
             socket.send(JSON.stringify(error))
             socket.close()

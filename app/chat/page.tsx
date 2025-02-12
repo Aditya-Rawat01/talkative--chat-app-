@@ -3,7 +3,7 @@ import bg from "@/public/bg.png"
 import sendBg from "@/public/Send.svg"
 import placeholder from "@/public/placeholder.jpg"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import Topbar from "../myComponents/Topbar"
 import Modal from "../myComponents/modal"
@@ -30,7 +30,8 @@ export default function Chat() {
         createdAt: Date;
     }[]|undefined>()
     const [activeUsers,setActiveUsers]=useState<activeUsers[]>()
-
+    const observerDiv1=useRef<HTMLDivElement>(null)
+    const observerDiv2=useRef<HTMLDivElement>(null)    
     useEffect(()=>{
         const token=sessionStorage.getItem("token")
         if (!token) {
@@ -50,7 +51,6 @@ export default function Chat() {
             }
             else if (content.type==="message") { // handle realtime messages
                 setMessages((prev)=>[...(prev??[]),{id:content.id,content:content.message,sender:content.sender,receiver:content.receiver,createdAt:content.createdAt}])
-                
             }
             else if(content.type==="UPDATE_USERS") {
                 setActiveUsers(content.users)
@@ -67,8 +67,12 @@ export default function Chat() {
             
         }
     },[])
+    useEffect(()=>{
+        observerDiv1.current?.scrollIntoView({behavior:"smooth"})
+        observerDiv2.current?.scrollIntoView({behavior:"smooth"})
+    },[messages,individual?.username])
     // optimize rerenders
-    const individiualMessages=messages?.filter((index)=>index.receiver===individual?.username || index.sender===individual?.username)
+    const individualMessages=messages?.filter((index)=>index.receiver===individual?.username || index.sender===individual?.username)
     //state ke upr chats khulegi / nya route bnaane ki jaroorat ni.
     // websockets logic. Receive all the message and sort it according to the chats as well.
     //move the div to different component and have it receive the message as props.
@@ -85,6 +89,7 @@ export default function Chat() {
         }
         
     }
+    
     return (
         <div className="h-screen w-screen bg-talkativeBg">
         <div className={`${windowState?"hidden sm:block":"block"}`}><Topbar/></div>
@@ -109,13 +114,14 @@ export default function Chat() {
                                     {individual?.username}
                                     
                                 {<span className={` text-sm absolute bottom-0 ${(activeUsers?.find((key:any,value)=>key.username===individual?.username)?.active)?"text-green-600":"text-gray-500"}`}>{((activeUsers?.find((key:any,value)=>key.username===individual?.username)?.active))?"online":"offline"}</span>}
-                                <span onClick={()=>setWindowstate(false)} className="bg-black h-8 w-8 absolute right-3 flex items-center justify-center rounded-full">x</span>
+                                <span onClick={()=>setWindowstate(false)} className="bg-black h-8 w-8 absolute right-3 flex items-center justify-center rounded-full cursor-pointer">x</span>
                                 </p>
                                 
                                 <div className="h-[calc(100vh-128px)] overflow-auto scroll-smooth hide-scrollbar">
-                                {individiualMessages?.map((index)=><div key={index.id} className={`p-1 w-full  text-black flex px-2  ${index.sender===individual?.username?"justify-start ":"justify-end "}`}>
-                                    <p className={`p-2 rounded-full text-wrap max-w-[85%] ${index.sender===individual?.username?"bg-white text-black rounded-bl-none":"bg-black text-white rounded-br-none"}`}>{index.content}</p>
+                                {individualMessages?.map((index,num)=><div key={num} className={`p-1 w-full  text-black flex px-2  ${index.sender===individual?.username?"justify-start ":"justify-end "}`}>
+                                    <p className={`p-2  rounded-full text-wrap max-w-[85%] ${index.receiver===individual?.username?"bg-black  ps-3 text-white rounded-br-none":"bg-white text-black rounded-bl-none"}`}>{index.content}</p>
                                     </div>)}
+                                    <div ref={observerDiv1} className="scroll-mt-10"></div>
                                 </div>
                                 <div className="h-12 mx-2 text-black rounded-full flex items-center justify-center relative">
                                     <textarea
@@ -140,13 +146,13 @@ export default function Chat() {
                                     {individual?.username}
                                     {<span className={` text-sm absolute bottom-0 ${((activeUsers?.find((key:any,value)=>key.username===individual?.username)?.active))?"text-green-600":"text-gray-500"}`}>{(activeUsers?.find((key:any,value)=>key.username===individual?.username)?.active)?"online":"offline"}</span>}
 
-                                <span onClick={()=>setWindowstate(false)} className="bg-black h-8 w-8 absolute right-3 flex items-center justify-center rounded-full">x</span>
+                                <span onClick={()=>setWindowstate(false)} className="bg-black h-8 w-8 absolute right-3 flex items-center justify-center rounded-full cursor-pointer">x</span>
                                 </p>
                                 <div className="h-[calc(100vh-128px)] overflow-auto scroll-smooth hide-scrollbar">
-                                {individiualMessages?.map((index)=><div key={index.id} className={`p-1 w-full  text-black flex px-2  ${index.sender===individual?.username?"justify-start ":"justify-end "}`}>
-                                    <p className={`p-2 rounded-full text-wrap max-w-[85%] ${index.sender===individual?.username?"bg-white text-black rounded-bl-none":"bg-black text-white rounded-br-none"}`}>{index.content}</p>
+                                {individualMessages?.map((index,num)=><div key={num} className={`p-1 w-full  text-black flex px-2  ${index.sender===individual?.username?"justify-start ":"justify-end "}`}>
+                                    <p className={`p-2 pl-3 rounded-full text-wrap max-w-[85%] ${index.receiver===individual?.username?"bg-black  ps-3 text-white rounded-br-none":"bg-white text-black rounded-bl-none"}`}>{index.content}</p>
                                     </div>)}
-                                
+     {/**/}                           <div ref={observerDiv2} className="scroll-mt-10"></div>
                                 </div>
                                 <div className="h-12 m-2 text-black rounded-full flex items-center justify-center relative">
                                     <textarea
