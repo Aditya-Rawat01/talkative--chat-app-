@@ -14,12 +14,13 @@ import jwt from "jsonwebtoken"
 
 interface activeUsers {
     username:string,
+    email:string,
     active:boolean,
 }
 export default function Chat() {
     const router=useRouter()
     const [windowState,setWindowstate]=useState<boolean|string>(false)
-    const [individual,setIndividual]=useState<{username:string}|null>()
+    const [individual,setIndividual]=useState<{username:string,email:string}|null>()
     const [text, setText] = useState("");
     const [socket,setSocket]=useState<WebSocket|undefined>()
     const [messages,setMessages]=useState<{
@@ -70,9 +71,9 @@ export default function Chat() {
     useEffect(()=>{
         observerDiv1.current?.scrollIntoView({behavior:"smooth"})
         observerDiv2.current?.scrollIntoView({behavior:"smooth"})
-    },[messages,individual?.username])
+    },[messages,individual?.email])
     // optimize rerenders
-    const individualMessages=messages?.filter((index)=>index.receiver===individual?.username || index.sender===individual?.username)
+    const individualMessages=messages?.filter((index)=>index.receiver===individual?.email || index.sender===individual?.email)
     //state ke upr chats khulegi / nya route bnaane ki jaroorat ni.
     // websockets logic. Receive all the message and sort it according to the chats as well.
     //move the div to different component and have it receive the message as props.
@@ -84,7 +85,7 @@ export default function Chat() {
             const senderToken=sessionStorage.getItem("token")
             const senderObj:any=jwt.decode(senderToken as string)
             const sender=senderObj?.email
-            socket?.send(JSON.stringify({type:"message",content:text,sender:sender,receiver:individual?.username,time:hrs+":"+min}))
+            socket?.send(JSON.stringify({type:"message",content:text,sender:sender,receiver:individual?.email,time:hrs+":"+min}))
             setText("")
         }
         
@@ -97,8 +98,8 @@ export default function Chat() {
         <div className={`w-full sm:w-[320px] md:w-[400px] lg:w-[500px] xl:w-[600px] h-full flex flex-col items-center gap-2 ${!windowState?"p-3":"sm:p-3"}`}>
             {activeUsers?.map((key:any,value)=>{
                 return (
-                        <div key={value} className={`${!windowState? "flex":"hidden sm:flex"} w-full justify-center cursor-pointer`} onClick={()=>setIndividual({username:key.username})}>
-                            <Modal username={key.username} active={key.active} setChatWindow={setWindowstate}/>
+                        <div key={value} className={`${!windowState? "flex":"hidden sm:flex"} w-full justify-center cursor-pointer`} onClick={()=>setIndividual({username:key.username,email:key.email})}>
+                            <Modal username={key.username} email={key.email} active={key.active} setChatWindow={setWindowstate}/>
                         </div>
                    
                     )
@@ -110,16 +111,19 @@ export default function Chat() {
                             alt="image"
                             />
                             <div className="absolute w-full z-20 text-white">
-                                <p className="h-16 w-full flex items-center justify-center relative text-2xl backdrop-blur-[1px]">
+                                <p className="h-16 pb-3 w-full flex items-center justify-center relative text-2xl backdrop-blur-[1px]">
                                     {individual?.username}
-                                    
-                                {<span className={` text-sm absolute bottom-0 ${(activeUsers?.find((key:any,value)=>key.username===individual?.username)?.active)?"text-green-600":"text-gray-500"}`}>{((activeUsers?.find((key:any,value)=>key.username===individual?.username)?.active))?"online":"offline"}</span>}
+                                    <span className="text-xs/3 font-mono absolute bottom-3">{individual?.email}
+                                   
+                                    </span>
+                                    {<span className={` text-xs/3 absolute bottom-0 ${(activeUsers?.find((key:any,value)=>key.email===individual?.email)?.active)?"text-green-600":"text-gray-500"}`}>{((activeUsers?.find((key:any,value)=>key.email===individual?.email)?.active))?"online":"offline"}</span>}
+
                                 <span onClick={()=>setWindowstate(false)} className="bg-black h-8 w-8 absolute right-3 flex items-center justify-center rounded-full cursor-pointer">x</span>
                                 </p>
                                 
                                 <div className="h-[calc(100vh-128px)] overflow-auto scroll-smooth hide-scrollbar">
-                                {individualMessages?.map((index,num)=><div key={num} className={`p-1 w-full  text-black flex px-2  ${index.sender===individual?.username?"justify-start ":"justify-end "}`}>
-                                    <p className={`p-2  rounded-full text-wrap max-w-[85%] ${index.receiver===individual?.username?"bg-black  ps-3 text-white rounded-br-none":"bg-white text-black rounded-bl-none"}`}>{index.content}</p>
+                                {individualMessages?.map((index,num)=><div key={num} className={`p-1 w-full  text-black flex px-2  ${index.sender===individual?.email?"justify-start ":"justify-end "}`}>
+                                    <p className={`p-2  rounded-full text-wrap max-w-[85%] ${index.receiver===individual?.email?"bg-black  ps-3 text-white rounded-br-none":"bg-white text-black rounded-bl-none"}`}>{index.content}</p>
                                     </div>)}
                                     <div ref={observerDiv1} className="scroll-mt-10"></div>
                                 </div>
@@ -144,13 +148,14 @@ export default function Chat() {
                     <div className="absolute z-20 w-full h-full -top-12 text-white">
                         <p className="h-16 w-full flex items-center justify-center relative text-2xl backdrop-blur-[1px]">
                                     {individual?.username}
-                                    {<span className={` text-sm absolute bottom-0 ${((activeUsers?.find((key:any,value)=>key.username===individual?.username)?.active))?"text-green-600":"text-gray-500"}`}>{(activeUsers?.find((key:any,value)=>key.username===individual?.username)?.active)?"online":"offline"}</span>}
+                                    
+                                    {<span className={` text-sm absolute bottom-0 ${((activeUsers?.find((key:any,value)=>key.email===individual?.email)?.active))?"text-green-600":"text-gray-500"}`}>{(activeUsers?.find((key:any,value)=>key.email===individual?.email)?.active)?"online":"offline"}</span>}
 
                                 <span onClick={()=>setWindowstate(false)} className="bg-black h-8 w-8 absolute right-3 flex items-center justify-center rounded-full cursor-pointer">x</span>
                                 </p>
                                 <div className="h-[calc(100vh-128px)] overflow-auto scroll-smooth hide-scrollbar">
-                                {individualMessages?.map((index,num)=><div key={num} className={`p-1 w-full  text-black flex px-2  ${index.sender===individual?.username?"justify-start ":"justify-end "}`}>
-                                    <p className={`p-2 pl-3 rounded-full text-wrap max-w-[85%] ${index.receiver===individual?.username?"bg-black  ps-3 text-white rounded-br-none":"bg-white text-black rounded-bl-none"}`}>{index.content}</p>
+                                {individualMessages?.map((index,num)=><div key={num} className={`p-1 w-full  text-black flex px-2  ${index.sender===individual?.email?"justify-start ":"justify-end "}`}>
+                                    <p className={`p-2 pl-3 rounded-full text-wrap max-w-[85%] ${index.receiver===individual?.email?"bg-black  ps-3 text-white rounded-br-none":"bg-white text-black rounded-bl-none"}`}>{index.content}</p>
                                     </div>)}
      {/**/}                           <div ref={observerDiv2} className="scroll-mt-10"></div>
                                 </div>

@@ -53,7 +53,7 @@ app.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                     email
                 }
             });
-            const token = jsonwebtoken_1.default.sign({ email }, process.env.SecretKey, { expiresIn: '24h' });
+            const token = jsonwebtoken_1.default.sign({ email, username }, process.env.SecretKey, { expiresIn: '24h' });
             res.json({
                 "msg": "Signed up successfully.",
                 "token": token
@@ -98,7 +98,7 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                     });
                     return;
                 }
-                const token = jsonwebtoken_1.default.sign({ email }, process.env.SecretKey, { expiresIn: '24h' });
+                const token = jsonwebtoken_1.default.sign({ email, username: userFound.username }, process.env.SecretKey, { expiresIn: '24h' });
                 res.json({
                     "msg": "Signed in successfully.",
                     "token": token
@@ -128,9 +128,8 @@ wss.on("connection", function (socket, req) {
         const token = req.headers["sec-websocket-protocol"];
         try {
             const currentUser = jsonwebtoken_1.default.verify(token, process.env.SecretKey);
-            totalUsers.set(currentUser.email, { WebSocket: socket, active: true });
-            console.log("this user is active:");
-            console.log(currentUser.email, { active: true });
+            totalUsers.set(currentUser.email, { WebSocket: socket, active: true, username: currentUser.username });
+            console.log(totalUsers.keys());
             const offlineMessages = yield prisma.messages.findMany({
                 where: {
                     OR: [
@@ -146,6 +145,7 @@ wss.on("connection", function (socket, req) {
                     createdAt: "asc"
                 }
             });
+            console.log(offlineMessages);
             socket.send(JSON.stringify({ type: "offlineMessages", message: offlineMessages }));
             // socket.send({}) //// we have to convert the object into strings as well ..it sends strings only
             totalUsers.forEach((value, key) => {
@@ -155,7 +155,8 @@ wss.on("connection", function (socket, req) {
                         users: Array.from(totalUsers.entries())
                             .filter(([id, data]) => id !== key)
                             .map(([id, data]) => ({
-                            username: id,
+                            username: data.username,
+                            email: id,
                             active: data.active
                         }))
                     }));
@@ -178,7 +179,7 @@ wss.on("connection", function (socket, req) {
                     const receiver = messageObj.receiver;
                     totalUsers.forEach((value, key) => __awaiter(this, void 0, void 0, function* () {
                         if (key === receiver || key === messageObj.sender) {
-                            value.WebSocket.send(JSON.stringify({ type: "message", message: messageObj.content, receiver: messageObj.receiver, sender: messageObj.sender, createdAt: message.createdAt }));
+                            value.WebSocket.send(JSON.stringify({ type: "message", message: messageObj.content, receiver: messageObj.receiver, sender: messageObj.sender }));
                             return;
                         }
                     }));
@@ -199,10 +200,9 @@ wss.on("connection", function (socket, req) {
                 if (userEmail) {
                     totalUsers.set(userEmail, {
                         WebSocket: socket,
-                        active: false
+                        active: false,
+                        username: currentUser.username
                     });
-                    console.log("User become offline");
-                    console.log(userEmail, { active: false });
                     totalUsers.forEach((value, key) => {
                         if (value.active) {
                             value.WebSocket.send(JSON.stringify({
@@ -210,7 +210,8 @@ wss.on("connection", function (socket, req) {
                                 users: Array.from(totalUsers.entries())
                                     .filter(([id, _]) => id !== key)
                                     .map(([id, data]) => ({
-                                    username: id,
+                                    username: data.username,
+                                    email: id,
                                     active: data.active
                                 }))
                             }));
@@ -226,7 +227,6 @@ wss.on("connection", function (socket, req) {
                 socket.close();
             }
             else {
-                console.log(error);
                 socket.send(JSON.stringify({ type: "error", message: "Invalid Token. Sign in again." }));
                 socket.send(JSON.stringify(error));
                 socket.close();

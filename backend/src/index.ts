@@ -38,7 +38,7 @@ app.post("/signup",async (req,res)=>{
                 password,
                 email
             }})
-        const token=jwt.sign({email},process.env.SecretKey as string,{expiresIn:'24h'})
+        const token=jwt.sign({email,username},process.env.SecretKey as string,{expiresIn:'24h'})
         res.json({
             "msg":"Signed up successfully.",
             "token":token
@@ -83,7 +83,7 @@ app.post("/signin",async(req,res)=>{
                     })
                     return
                 }
-                const token=jwt.sign({email},process.env.SecretKey as string,{expiresIn:'24h'})
+                const token=jwt.sign({email,username:userFound.username},process.env.SecretKey as string,{expiresIn:'24h'})
                 res.json({
                     "msg":"Signed in successfully.",
                     "token":token
@@ -112,12 +112,13 @@ app.post("/signin",async(req,res)=>{
 
 
 const wss=new WebSocketServer({server})
-const totalUsers= new Map<string,{WebSocket:WebSocket,active:boolean}>([])
+const totalUsers= new Map<string,{WebSocket:WebSocket,active:boolean,username:string}>([])
 wss.on("connection",async function(socket,req) {
     const token=req.headers["sec-websocket-protocol"]
     try {
     const currentUser=jwt.verify(token as string,process.env.SecretKey as string)
-    totalUsers.set((currentUser as JwtPayload).email,{WebSocket:socket,active:true})
+    totalUsers.set((currentUser as JwtPayload).email,{WebSocket:socket,active:true,username:(currentUser as JwtPayload).username})
+    console.log(totalUsers.keys())
     const offlineMessages=await prisma.messages.findMany({
         
         where:{
@@ -134,6 +135,7 @@ wss.on("connection",async function(socket,req) {
             createdAt: "asc"
         }
     })
+    console.log(offlineMessages)
     socket.send(JSON.stringify({ type: "offlineMessages", message: offlineMessages}))
     // socket.send({}) //// we have to convert the object into strings as well ..it sends strings only
     
@@ -144,7 +146,8 @@ wss.on("connection",async function(socket,req) {
                 users: Array.from(totalUsers.entries())
                 .filter(([id, data]) => id!==key)
                 .map(([id, data]) => ({
-                    username:id,
+                    username:data.username,
+                    email:id,
                     active: data.active
                 }))
             }));
@@ -169,14 +172,15 @@ wss.on("connection",async function(socket,req) {
         
             totalUsers.forEach(async(value,key)=>{
                 if (key===receiver || key===messageObj.sender) {
-                    value.WebSocket.send(JSON.stringify({type:"message", message:messageObj.content,receiver:messageObj.receiver,sender:messageObj.sender,createdAt:message.createdAt}))
+                    value.WebSocket.send(JSON.stringify({type:"message", message:messageObj.content,receiver:messageObj.receiver,sender:messageObj.sender}))
                     return
                 }
             })
+             
             if (!totalUsers.has(receiver)) {
-            socket.send(JSON.stringify({type:"error", message:"No such users found. Please use frontend interface only"}))
-            return
-        }    
+                socket.send(JSON.stringify({type:"error", message:"No such users found. Please use frontend interface only"}))
+                return
+            }   
         } catch (error) {
             socket.send(JSON.stringify({type:"error", message:"Db Error"}))
             return /// add return statement instead of socket.close
@@ -190,7 +194,8 @@ wss.on("connection",async function(socket,req) {
     if (userEmail) {
         totalUsers.set(userEmail, {
             WebSocket: socket,
-            active: false
+            active: false,
+            username:(currentUser as JwtPayload).username
         }
     )
        
@@ -202,14 +207,14 @@ wss.on("connection",async function(socket,req) {
                     users: Array.from(totalUsers.entries())
                         .filter(([id, _]) => id !== key)
                         .map(([id, data]) => ({
-                            username: id,
+                            username: data.username,
+                            email:id,
                             active: data.active
                         }))
                 }));
             }
         });
     }
-        
            //// remove this
     })
     
