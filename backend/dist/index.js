@@ -129,7 +129,6 @@ wss.on("connection", function (socket, req) {
         try {
             const currentUser = jsonwebtoken_1.default.verify(token, process.env.SecretKey);
             totalUsers.set(currentUser.email, { WebSocket: socket, active: true, username: currentUser.username });
-            console.log(totalUsers.keys());
             const offlineMessages = yield prisma.messages.findMany({
                 where: {
                     OR: [
@@ -145,7 +144,6 @@ wss.on("connection", function (socket, req) {
                     createdAt: "asc"
                 }
             });
-            console.log(offlineMessages);
             socket.send(JSON.stringify({ type: "offlineMessages", message: offlineMessages }));
             // socket.send({}) //// we have to convert the object into strings as well ..it sends strings only
             totalUsers.forEach((value, key) => {

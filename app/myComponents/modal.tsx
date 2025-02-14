@@ -1,14 +1,18 @@
 import { Dispatch, SetStateAction } from "react";
-
+import ChatIcon from "@/public/chat_bubble.png"
+import Image from "next/image";
+import placeholder from "@/public/profile.png"
 export default function Modal({ username, active,email, setChatWindow}:{username:string,email:string, active:boolean, setChatWindow:Dispatch<SetStateAction<string|boolean>>}) {
     return (
-    <div className="relative w-[90%] sm:w-[320px] md:w-[400px] lg:w-[500px] xl:w-[600px] h-[62px] bg-[#5EB1BF] rounded-lg flex gap-5 justify-center items-center text-white" onClick={()=>setChatWindow(username)}>
+    <div className="relative w-[85%] xl:w-[80%] h-[62px] bg-[#B1DDF1] rounded-lg flex gap-5 justify-center items-center text-[#112A46]" onClick={()=>setChatWindow(username)}>
         <p>{username}</p>
         <p className="absolute text-xs text-gray-500 bottom-1">{email}</p>
-        <div className="w-10 h-10 bg-white rounded-full absolute left-[10%]">
-            <div className={`w-3 h-3 absolute rounded-full ${active?"bg-green-700":"bg-gray-500"} bottom-0 right-0`}></div>
+        <div className="w-10 h-10 bg-white rounded-full absolute left-[10%] drop-shadow-custom">
+            <Image src={placeholder} alt="placeholder" className="w-[40px] h-[41px]"/>
+            <div className={`w-3 h-3 absolute rounded-full ${active?"bg-green-600":"bg-gray-500"} bottom-0 right-0`}></div>
 
         </div>
+        <Image src={ChatIcon} alt="chatIcon" className="w-[24px] absolute right-3 top-[40%]"/>
     </div>
     )
 }

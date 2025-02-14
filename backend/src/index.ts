@@ -118,7 +118,6 @@ wss.on("connection",async function(socket,req) {
     try {
     const currentUser=jwt.verify(token as string,process.env.SecretKey as string)
     totalUsers.set((currentUser as JwtPayload).email,{WebSocket:socket,active:true,username:(currentUser as JwtPayload).username})
-    console.log(totalUsers.keys())
     const offlineMessages=await prisma.messages.findMany({
         
         where:{
@@ -135,7 +134,6 @@ wss.on("connection",async function(socket,req) {
             createdAt: "asc"
         }
     })
-    console.log(offlineMessages)
     socket.send(JSON.stringify({ type: "offlineMessages", message: offlineMessages}))
     // socket.send({}) //// we have to convert the object into strings as well ..it sends strings only
     

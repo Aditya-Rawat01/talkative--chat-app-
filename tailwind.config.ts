@@ -56,7 +56,10 @@ export default {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
-  		}
+  		},
+		dropShadow: {
+			custom:"0px 1px 1px black"
+		}
   	}
   },
   plugins: [require("tailwindcss-animate")],

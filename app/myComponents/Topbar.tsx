@@ -1,11 +1,14 @@
+import Icon from "@/public/chatIcon.png"
+import Image from "next/image"
+import Settings from "@/public/settings.png"
 export default function Topbar() {
     return (
-        <div className="w-full h-12 bg-white flex justify-around items-center sm:w-[320px] md:w-[400px] lg:w-[500px] xl:w-[600px]">
-            <div className="flex gap-2">
-                <p>Icon</p>
+        <div className="w-full h-[65px] font-secondary font-bold text-2xl md:text-3xl bg-[#17BEBB] flex justify-between p-2 md:p-4 items-center ">
+            <div className="flex gap-2 items-end">
+                <Image src={Icon} alt="icon" className="w-[50px]"/>
                 <p>Talkative</p>
             </div>
-            <p>Settings</p>
+            <Image src={Settings} alt="icon" className="w-[20px] mr-2"/>
         </div>
     )
 }
