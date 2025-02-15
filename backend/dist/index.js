@@ -17,6 +17,7 @@ const cors_1 = __importDefault(require("cors"));
 const zodSchema_1 = require("./zodSchema");
 const client_1 = require("@prisma/client");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const cloudinary_1 = require("cloudinary");
 const ws_1 = require("ws");
 require('dotenv').config();
 const app = (0, express_1.default)();
@@ -29,8 +30,29 @@ app.get("/", (req, res) => {
         "msg": "hello"
     });
 });
+cloudinary_1.v2.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+function imageUploader(avatar) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const result = yield cloudinary_1.v2.uploader.upload(avatar, {
+                transformation: [
+                    { width: 500, height: 500, crop: "thumb", gravity: "face", zoom: 1.5 }
+                ]
+            });
+            return result.secure_url;
+        }
+        catch (error) {
+            console.log(error);
+            throw new Error('Failed to upload the image');
+        }
+    });
+}
 app.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { username, password, email } = req.body;
+    const { username, password, email, avatar } = req.body;
     const success = zodSchema_1.signupSchema.safeParse({ username, password, email });
     if (!username || !password || !email) {
         res.status(411).json({
@@ -46,14 +68,15 @@ app.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
     else {
         try {
-            yield prisma.user.create({
+            const user = yield prisma.user.create({
                 data: {
                     username,
                     password,
-                    email
+                    email,
+                    avatar: avatar ? yield imageUploader(avatar) : "placeholder"
                 }
             });
-            const token = jsonwebtoken_1.default.sign({ email, username }, process.env.SecretKey, { expiresIn: '24h' });
+            const token = jsonwebtoken_1.default.sign({ email, username, avatar: user.avatar }, process.env.SecretKey, { expiresIn: '24h' });
             res.json({
                 "msg": "Signed up successfully.",
                 "token": token
@@ -98,7 +121,7 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                     });
                     return;
                 }
-                const token = jsonwebtoken_1.default.sign({ email, username: userFound.username }, process.env.SecretKey, { expiresIn: '24h' });
+                const token = jsonwebtoken_1.default.sign({ email, username: userFound.username, avatar: userFound.avatar }, process.env.SecretKey, { expiresIn: '24h' });
                 res.json({
                     "msg": "Signed in successfully.",
                     "token": token
@@ -128,7 +151,7 @@ wss.on("connection", function (socket, req) {
         const token = req.headers["sec-websocket-protocol"];
         try {
             const currentUser = jsonwebtoken_1.default.verify(token, process.env.SecretKey);
-            totalUsers.set(currentUser.email, { WebSocket: socket, active: true, username: currentUser.username });
+            totalUsers.set(currentUser.email, { WebSocket: socket, active: true, username: currentUser.username, avatar: currentUser.avatar });
             const offlineMessages = yield prisma.messages.findMany({
                 where: {
                     OR: [
@@ -155,7 +178,8 @@ wss.on("connection", function (socket, req) {
                             .map(([id, data]) => ({
                             username: data.username,
                             email: id,
-                            active: data.active
+                            active: data.active,
+                            avatar: data.avatar
                         }))
                     }));
                 }
@@ -199,7 +223,8 @@ wss.on("connection", function (socket, req) {
                     totalUsers.set(userEmail, {
                         WebSocket: socket,
                         active: false,
-                        username: currentUser.username
+                        username: currentUser.username,
+                        avatar: currentUser.avatar
                     });
                     totalUsers.forEach((value, key) => {
                         if (value.active) {
@@ -210,7 +235,8 @@ wss.on("connection", function (socket, req) {
                                     .map(([id, data]) => ({
                                     username: data.username,
                                     email: id,
-                                    active: data.active
+                                    active: data.active,
+                                    avatar: data.avatar
                                 }))
                             }));
                         }

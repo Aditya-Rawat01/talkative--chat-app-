@@ -3,6 +3,7 @@ import cors from 'cors'
 import { signupSchema } from './zodSchema'
 import { PrismaClient } from '@prisma/client'
 import jwt, { JwtPayload } from 'jsonwebtoken'
+import { v2 as cloudinary } from 'cloudinary'
 import { WebSocket, WebSocketServer } from 'ws'
 require('dotenv').config();
 const app=express()
@@ -15,9 +16,30 @@ app.get("/",(req,res)=>{
         "msg":"hello"
     })
 })
+cloudinary.config({ 
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+    api_key: process.env.CLOUDINARY_API_KEY, 
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+
+async function imageUploader(avatar:string) {
+    try {
+        const result=await cloudinary.uploader.upload(avatar,{
+            transformation:[
+                { width: 500, height: 500, crop: "thumb", gravity: "face", zoom: 1.5 }
+            ]
+        })
+        return result.secure_url as string   
+    } catch (error) {
+        console.log(error)
+        throw new Error('Failed to upload the image')
+        
+    }
+    
+}
 
 app.post("/signup",async (req,res)=>{
- const {username, password, email}=req.body
+ const {username, password, email,avatar}=req.body
  const success=signupSchema.safeParse({username, password, email})
  if (!username|| !password || !email) {
     res.status(411).json({
@@ -31,14 +53,17 @@ app.post("/signup",async (req,res)=>{
     })
     return;
  } else {
+    
+    
     try {
-        await prisma.user.create({
+        const user=await prisma.user.create({
             data:{
                 username,
                 password,
-                email
+                email,
+                avatar:avatar? await imageUploader(avatar):"placeholder"
             }})
-        const token=jwt.sign({email,username},process.env.SecretKey as string,{expiresIn:'24h'})
+        const token=jwt.sign({email,username,avatar:user.avatar},process.env.SecretKey as string,{expiresIn:'24h'})
         res.json({
             "msg":"Signed up successfully.",
             "token":token
@@ -83,7 +108,7 @@ app.post("/signin",async(req,res)=>{
                     })
                     return
                 }
-                const token=jwt.sign({email,username:userFound.username},process.env.SecretKey as string,{expiresIn:'24h'})
+                const token=jwt.sign({email,username:userFound.username,avatar:userFound.avatar},process.env.SecretKey as string,{expiresIn:'24h'})
                 res.json({
                     "msg":"Signed in successfully.",
                     "token":token
@@ -112,12 +137,12 @@ app.post("/signin",async(req,res)=>{
 
 
 const wss=new WebSocketServer({server})
-const totalUsers= new Map<string,{WebSocket:WebSocket,active:boolean,username:string}>([])
+const totalUsers= new Map<string,{WebSocket:WebSocket,active:boolean,username:string,avatar:string}>([])
 wss.on("connection",async function(socket,req) {
     const token=req.headers["sec-websocket-protocol"]
     try {
     const currentUser=jwt.verify(token as string,process.env.SecretKey as string)
-    totalUsers.set((currentUser as JwtPayload).email,{WebSocket:socket,active:true,username:(currentUser as JwtPayload).username})
+    totalUsers.set((currentUser as JwtPayload).email,{WebSocket:socket,active:true,username:(currentUser as JwtPayload).username,avatar:(currentUser as JwtPayload).avatar})
     const offlineMessages=await prisma.messages.findMany({
         
         where:{
@@ -146,7 +171,8 @@ wss.on("connection",async function(socket,req) {
                 .map(([id, data]) => ({
                     username:data.username,
                     email:id,
-                    active: data.active
+                    active: data.active,
+                    avatar:data.avatar
                 }))
             }));
         }    
@@ -193,7 +219,8 @@ wss.on("connection",async function(socket,req) {
         totalUsers.set(userEmail, {
             WebSocket: socket,
             active: false,
-            username:(currentUser as JwtPayload).username
+            username:(currentUser as JwtPayload).username,
+            avatar:(currentUser as JwtPayload).avatar
         }
     )
        
@@ -207,7 +234,8 @@ wss.on("connection",async function(socket,req) {
                         .map(([id, data]) => ({
                             username: data.username,
                             email:id,
-                            active: data.active
+                            active: data.active,
+                            avatar:data.avatar
                         }))
                 }));
             }
