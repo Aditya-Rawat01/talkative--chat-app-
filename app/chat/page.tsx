@@ -37,7 +37,6 @@ export default function Chat() {
     const allUsersArr=useRef<activeUsers[]|null>(null) // for search functionality
     const observerDiv1=useRef<HTMLDivElement>(null)
     const observerDiv2=useRef<HTMLDivElement>(null)    
-    const [myAvatar,setMyAvatar]=useState<string|null>(null)
     useEffect(()=>{
         const token=sessionStorage.getItem("token")
         if (!token) {
@@ -45,8 +44,6 @@ export default function Chat() {
             router.push("/")
             return
         }
-        const decoded:any=jwt.decode(token as string)
-        setMyAvatar(decoded?.avatar)
         const ws=new WebSocket(wsURI, [token])
         setSocket(ws)
         ws.onopen=()=>{
@@ -100,7 +97,7 @@ export default function Chat() {
         <div className="h-screen w-screen bg-black">
             <div className="md:flex items-start justify-start">
                 <div>
-                <div className={`${windowState?"hidden md:block":"block"} w-full md:w-[412px] lg:w-[500px] xl:w-[600px]`}><Topbar avatar={myAvatar} setMyAvatar={setMyAvatar}/></div>
+                <div className={`${windowState?"hidden md:block":"block"} w-full md:w-[412px] lg:w-[500px] xl:w-[600px]`}><Topbar/></div>
                 <div className={`w-full flex items-center justify-center relative ${windowState?"hidden":"flex"} md:flex mt-10`}>
                     <input className={`bg-[#868686] text-white rounded-md w-[85%]  h-[40px] bg-opacity-25 focus:outline-none pl-8 sm:pl-10 `} placeholder="Search Users" onSubmit={(e)=>e.preventDefault()} onChange={(e)=>setActiveUsers(allUsersArr.current?.filter((index)=>index.email.startsWith(e.target.value)||index.username.startsWith(e.target.value)))}/>
                     <Image src={Search} alt="searchIcon" className="w-[18px] absolute left-[9%]"/>

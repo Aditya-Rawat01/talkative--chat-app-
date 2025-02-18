@@ -136,6 +136,7 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             }
         }
         catch (error) {
+            console.log(error);
             res.status(500).json({
                 "msg": "Internal Server Error. Please Try Again Later"
             });

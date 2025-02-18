@@ -10,6 +10,10 @@ const app=express()
 const prisma=new PrismaClient()
 app.use(express.json())
 app.use(cors())
+
+const totalUsers= new Map<string,{WebSocket:WebSocket,active:boolean,username:string,avatar:string}>([])
+
+
 const server=app.listen(5000)
 app.get("/",(req,res)=>{
     res.json({
@@ -29,7 +33,8 @@ async function imageUploader(avatar:string) {
                 { width: 500, height: 500, crop: "thumb", gravity: "face", zoom: 1.5 }
             ]
         })
-        return result.secure_url as string   
+        
+        return {avatarUrl:result.secure_url,publicId:result.public_id}  
     } catch (error) {
         console.log(error)
         throw new Error('Failed to upload the image')
@@ -40,20 +45,28 @@ async function imageUploader(avatar:string) {
 
 app.post("/signup",async (req,res)=>{
  const {username, password, email,avatar}=req.body
+//  const validExtensions = ['.jpg', '.jpeg', '.png', '.webp','null'];
  const success=signupSchema.safeParse({username, password, email})
+//  const validImage=validExtensions.includes(avatar.substring(avatar.length-4,avatar.length))
  if (!username|| !password || !email) {
     res.status(411).json({
         "msg":"Some fields are empty"
     })
     return;
 }
+// if (!validImage) {
+//     res.status(403).json({
+//         "msg":"Image type is invalid"
+//     })
+//     return;
+// }
  if (success.error) {
     res.status(411).json({
         "msg":success.error.issues[0].message
     })
     return;
  } else {
-    
+    const {avatarUrl,publicId}=await imageUploader(avatar)
     
     try {
         const user=await prisma.user.create({
@@ -61,9 +74,10 @@ app.post("/signup",async (req,res)=>{
                 username,
                 password,
                 email,
-                avatar:avatar? await imageUploader(avatar):"placeholder"
+                avatar:avatar? avatarUrl:"placeholder",// avatar can be image or null
+                publicId
             }})
-        const token=jwt.sign({email,username,avatar:user.avatar},process.env.SecretKey as string,{expiresIn:'24h'})
+        const token=jwt.sign({email,username,avatar:user.avatar,publicId},process.env.SecretKey as string,{expiresIn:'24h'})
         res.json({
             "msg":"Signed up successfully.",
             "token":token
@@ -108,7 +122,7 @@ app.post("/signin",async(req,res)=>{
                     })
                     return
                 }
-                const token=jwt.sign({email,username:userFound.username,avatar:userFound.avatar},process.env.SecretKey as string,{expiresIn:'24h'})
+                const token=jwt.sign({email,username:userFound.username,avatar:userFound.avatar,publicId:userFound.publicId},process.env.SecretKey as string,{expiresIn:'24h'})
                 res.json({
                     "msg":"Signed in successfully.",
                     "token":token
@@ -123,6 +137,7 @@ app.post("/signin",async(req,res)=>{
                  
             }   
        } catch (error) {
+        console.log(error)
           res.status(500).json({
            "msg":"Internal Server Error. Please Try Again Later"
           })
@@ -131,13 +146,63 @@ app.post("/signin",async(req,res)=>{
     }  
 })
 
-
+app.post("/update",async(req,res)=>{
+    const {avatar, username, email,publicId}=req.body
+    if (!avatar || !username || !email || !publicId) {
+        res.status(411).json({
+        "msg":"Avatar or username is missing."
+    })}
+    // checks for valid image type
+    const avatarUrl=await cloudinary.uploader.upload(avatar,{
+        public_id:publicId,
+        invalidate:true
+    })
+    
+// cloudinary upload image fn with replacing the original one
+try {
+    const updatedUser=await prisma.user.update({
+        where: {
+            email
+        }, 
+        data:{
+            username,
+            avatar:avatarUrl.secure_url // cloudinary image
+        }
+    })
+    totalUsers.forEach((value,key) => {
+        if (value.active) {
+            value.WebSocket.send(JSON.stringify({
+                type: "UPDATE_USERS",
+                users: Array.from(totalUsers.entries())
+                .filter(([id, data]) => id!==key)
+                .map(([id, data]) => ({
+                    username:(id!==email)?data.username:updatedUser.username, //add the optional logic for the username ((id!==email from body)?data.username:updatedUser.username)
+                    email:id,
+                    active: data.active,
+                    avatar:(id!=email)?data.avatar:updatedUser.avatar //for avatar as well
+                }))
+            }));
+        }    
+    });
+    const token=jwt.sign({email,username:updatedUser.username,avatar:updatedUser.avatar,publicId},process.env.SecretKey as string,{expiresIn:'24h'})
+    // create a jwt token again in order to avoid inconsistencies while signing up.
+    res.json({
+        "msg":"User Updated Successfully",
+        "token":token
+    })
+} catch (error) {
+    console.log(error)
+    res.status(403).json({
+        "msg":"Error occurred, check backend"
+    })
+}
+    
+})
 /////// provide proper format to the messages like {type:"Error/Message", sender:null/someone, receiver:someone }
 
 
 
 const wss=new WebSocketServer({server})
-const totalUsers= new Map<string,{WebSocket:WebSocket,active:boolean,username:string,avatar:string}>([])
 wss.on("connection",async function(socket,req) {
     const token=req.headers["sec-websocket-protocol"]
     try {
