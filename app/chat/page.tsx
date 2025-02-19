@@ -23,7 +23,7 @@ interface activeUsers {
 export default function Chat() {
     const router=useRouter()
     const [windowState,setWindowstate]=useState<boolean|string>(false)
-    const [individual,setIndividual]=useState<{username:string,email:string}|null>()
+    const [individual,setIndividual]=useState<{username:string,email:string,avatar:string}|null>()
     const [text, setText] = useState("");
     const [socket,setSocket]=useState<WebSocket|undefined>()
     const [messages,setMessages]=useState<{
@@ -106,7 +106,7 @@ export default function Chat() {
                     <div className={`w-full md:w-[412px] lg:w-[500px] xl:w-[600px] h-full flex flex-col items-center gap-2 ${!windowState?"pt-3":"md:pt-3"}`}>
                             {activeUsers?.map((key:any,value)=>{
                                 return (
-                                    <div key={value} className={`${!windowState? "flex":"hidden md:flex"} w-full md:w-[412px] lg:w-[480px] xl:w-[600px] justify-center cursor-pointer`} onClick={()=>setIndividual({username:key.username,email:key.email})}>
+                                    <div key={value} className={`${!windowState? "flex":"hidden md:flex"} w-full md:w-[412px] lg:w-[480px] xl:w-[600px] justify-center cursor-pointer`} onClick={()=>setIndividual({username:key.username,email:key.email,avatar:key.avatar})}>
                                         <Modal username={key.username} email={key.email} active={key.active} avatar={key.avatar} setChatWindow={setWindowstate}/>
                                     </div>
                                 )})}
@@ -118,8 +118,8 @@ export default function Chat() {
                             />
                                 <div className="absolute w-full z-20 text-white">
                                 <div className="h-16 w-full flex items-center justify-center relative text-2xl bg-white text-black shadow-md shadow-gray-500 rounded-b-[50px]">
-                                <div className="w-10 h-10 rounded-full absolute left-[10%] drop-shadow-custom">
-                                <Image src={placeholder} alt="placeholder" className="w-[40px] h-[41px]"/></div>
+                                <div className="w-10 h-10 rounded-full absolute left-[10%] drop-shadow-custom overflow-hidden bg-red-600">
+                                <Image src={individual?.avatar as string} alt="placeholder" className="w-[40px] h-[41px]"/></div>
                                     {individual?.username}
                                     {<span className={` text-sm absolute bottom-0 ${((activeUsers?.find((key:any,value)=>key.email===individual?.email)?.active))?"text-[#3aad20]":"text-gray-600"}`}>{(activeUsers?.find((key:any,value)=>key.email===individual?.email)?.active)?"online":"offline"}</span>}
                                 <Image src={cancel} alt="cancel" onClick={()=>setWindowstate(false)} className="w-8 right-6 top-1/3 absolute cursor-pointer"/>
@@ -155,7 +155,7 @@ export default function Chat() {
                             <div className="absolute z-20 w-full h-full text-white">
                                 <div className="h-16 w-full flex items-center justify-center relative text-2xl bg-white text-black shadow-md shadow-gray-500 rounded-b-[50px]">
                                 <div className="w-10 h-10 rounded-full absolute left-[10%] drop-shadow-custom">
-                                <Image src={placeholder} alt="placeholder" className="w-[40px] h-[41px]"/></div>
+                                <Image src={individual?.avatar as string} alt="placeholder" className="w-[40px] h-[41px]"/></div>
                                     {individual?.username}
                                     {<span className={` text-sm absolute bottom-0 ${((activeUsers?.find((key:any,value)=>key.email===individual?.email)?.active))?"text-[#3aad20]":"text-gray-600"}`}>{(activeUsers?.find((key:any,value)=>key.email===individual?.email)?.active)?"online":"offline"}</span>}
                                 <Image src={cancel} alt="cancel" onClick={()=>setWindowstate(false)} className="w-8 right-6 top-1/3 absolute cursor-pointer"/>

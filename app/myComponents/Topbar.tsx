@@ -10,12 +10,11 @@ import { toast } from "sonner"
 import { useDropzone } from "react-dropzone"
 export default function Topbar() {
     const [settings,setSettings]=useState(false)
-    const [myAvatar,setMyAvatar]=useState<string>('')
+    const [myAvatar,setMyAvatar]=useState<ArrayBuffer|string|null>('')
     const [username, setUsername] = useState("");
     const currentName=useRef<string>('')
     const currentAvatar=useRef<string>('')
     const token=useRef<string>(sessionStorage.getItem("token"))
-    const [preview,setPreview]=useState<ArrayBuffer|string|null>(null)
     const email=useRef(null)
     const {mutate}=updateUserHook()
     useEffect(()=>{
@@ -26,25 +25,28 @@ export default function Topbar() {
         const decoded:any=jwt.decode(token.current as string)
         setMyAvatar(decoded?.avatar)
         email.current=decoded?.email
+        currentAvatar.current=decoded?.avatar
         currentName.current=decoded.username
     },[token.current])
     function setProfile() {
         console.log("name")
-    }
-    const decoded:any=jwt.decode(token.current as string)
-    mutate({username:decoded.username,email:decoded?.email,avatar:decoded.avatar,publicId:decoded.publicId},{
+        const decoded:any=jwt.decode(token.current as string)
+        mutate({username:decoded.username,email:decoded?.email,avatar:decoded.avatar,publicId:decoded.publicId},{
         onSuccess:(data)=>{
+            
             token.current=sessionStorage.getItem("token")
             toast.success(data)
         }
     })
+    }
+    
         const onDrop = useCallback((acceptedFiles:File[]) => {
             
             const file=new FileReader;
             
             file.onload=()=>{
                 console.log(acceptedFiles[0])
-                setPreview(file.result)
+                setMyAvatar(file.result)
             }
             file.readAsDataURL(acceptedFiles[0])
           }, [])
@@ -53,13 +55,13 @@ export default function Topbar() {
             maxSize:3*1024*1024,
             accept:{"image/*":[]},  
             onFileDialogCancel() {
-                setPreview(null)
+                setMyAvatar(currentAvatar.current)
             },
         })
         
-    if (!settings && username!='') {
+    if (!settings && (username!="" || myAvatar!=currentAvatar.current)) {
         setUsername('')
-        setMyAvatar('')
+        setMyAvatar(currentAvatar.current)
     }
     // the only thing is remaining that the image tag should show the uploaded file from the system
     return (
@@ -73,7 +75,7 @@ export default function Topbar() {
             <div className={`absolute transition-all duration-1000 bg-[#17BEBB]  left-0 h-[calc(100vh-65px)] w-full top-[65px] origin-top-right -z-10 ${!settings?"rotate-90 ":"rotate-0"}`}>
                 <div className="w-full h-12 md:h-16 bg-white flex items-center justify-center font-medium">Settings</div>
                 {<div className="w-full flex flex-col font-medium items-center justify-center">
-                    <Image src={(myAvatar!=="placeholder" && myAvatar)?myAvatar:placeholder} height={2000} width={2000} alt="avatar" className="border-2 border-white rounded-full h-32 w-32 mt-2"/>
+                    <Image src={((myAvatar as string)!=="placeholder" && myAvatar as string)?myAvatar as string:placeholder} height={2000} width={2000} alt="avatar" className="border-2 border-white rounded-full h-32 w-32 mt-2"/>
                     <p>{username?username:currentName.current}</p>
                     <p className="text-sm font-mono font-semibold">{email.current}</p>
                 </div>}

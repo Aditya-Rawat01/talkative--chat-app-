@@ -37,7 +37,7 @@ async function imageUploader(avatar:string) {
         return {avatarUrl:result.secure_url,publicId:result.public_id}  
     } catch (error) {
         console.log(error)
-        throw new Error('Failed to upload the image')
+        throw new Error('Failed to upload the image') // do res.json
         
     }
     
@@ -66,7 +66,13 @@ app.post("/signup",async (req,res)=>{
     })
     return;
  } else {
-    const {avatarUrl,publicId}=await imageUploader(avatar)
+        let avatarUrl="placeholder"
+        let publicId=""
+        if (avatar) {
+            let val=await imageUploader(avatar)
+            avatarUrl=val.avatarUrl
+            publicId=val.publicId
+        }
     
     try {
         const user=await prisma.user.create({
@@ -74,7 +80,7 @@ app.post("/signup",async (req,res)=>{
                 username,
                 password,
                 email,
-                avatar:avatar? avatarUrl:"placeholder",// avatar can be image or null
+                avatar:avatarUrl,
                 publicId
             }})
         const token=jwt.sign({email,username,avatar:user.avatar,publicId},process.env.SecretKey as string,{expiresIn:'24h'})
@@ -186,9 +192,11 @@ try {
     });
     const token=jwt.sign({email,username:updatedUser.username,avatar:updatedUser.avatar,publicId},process.env.SecretKey as string,{expiresIn:'24h'})
     // create a jwt token again in order to avoid inconsistencies while signing up.
+    console.log(token)
     res.json({
         "msg":"User Updated Successfully",
-        "token":token
+        "token":token,
+        
     })
 } catch (error) {
     console.log(error)

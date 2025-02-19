@@ -24,6 +24,7 @@ const app = (0, express_1.default)();
 const prisma = new client_1.PrismaClient();
 app.use(express_1.default.json());
 app.use((0, cors_1.default)());
+const totalUsers = new Map([]);
 const server = app.listen(5000);
 app.get("/", (req, res) => {
     res.json({
@@ -43,23 +44,31 @@ function imageUploader(avatar) {
                     { width: 500, height: 500, crop: "thumb", gravity: "face", zoom: 1.5 }
                 ]
             });
-            return result.secure_url;
+            return { avatarUrl: result.secure_url, publicId: result.public_id };
         }
         catch (error) {
             console.log(error);
-            throw new Error('Failed to upload the image');
+            throw new Error('Failed to upload the image'); // do res.json
         }
     });
 }
 app.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { username, password, email, avatar } = req.body;
+    //  const validExtensions = ['.jpg', '.jpeg', '.png', '.webp','null'];
     const success = zodSchema_1.signupSchema.safeParse({ username, password, email });
+    //  const validImage=validExtensions.includes(avatar.substring(avatar.length-4,avatar.length))
     if (!username || !password || !email) {
         res.status(411).json({
             "msg": "Some fields are empty"
         });
         return;
     }
+    // if (!validImage) {
+    //     res.status(403).json({
+    //         "msg":"Image type is invalid"
+    //     })
+    //     return;
+    // }
     if (success.error) {
         res.status(411).json({
             "msg": success.error.issues[0].message
@@ -67,16 +76,24 @@ app.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         return;
     }
     else {
+        let avatarUrl = "placeholder";
+        let publicId = "";
+        if (avatar) {
+            let val = yield imageUploader(avatar);
+            avatarUrl = val.avatarUrl;
+            publicId = val.publicId;
+        }
         try {
             const user = yield prisma.user.create({
                 data: {
                     username,
                     password,
                     email,
-                    avatar: avatar ? yield imageUploader(avatar) : "placeholder"
+                    avatar: avatarUrl,
+                    publicId
                 }
             });
-            const token = jsonwebtoken_1.default.sign({ email, username, avatar: user.avatar }, process.env.SecretKey, { expiresIn: '24h' });
+            const token = jsonwebtoken_1.default.sign({ email, username, avatar: user.avatar, publicId }, process.env.SecretKey, { expiresIn: '24h' });
             res.json({
                 "msg": "Signed up successfully.",
                 "token": token
@@ -121,7 +138,7 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                     });
                     return;
                 }
-                const token = jsonwebtoken_1.default.sign({ email, username: userFound.username, avatar: userFound.avatar }, process.env.SecretKey, { expiresIn: '24h' });
+                const token = jsonwebtoken_1.default.sign({ email, username: userFound.username, avatar: userFound.avatar, publicId: userFound.publicId }, process.env.SecretKey, { expiresIn: '24h' });
                 res.json({
                     "msg": "Signed in successfully.",
                     "token": token
@@ -144,9 +161,61 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         }
     }
 }));
+app.post("/update", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { avatar, username, email, publicId } = req.body;
+    if (!avatar || !username || !email || !publicId) {
+        res.status(411).json({
+            "msg": "Avatar or username is missing."
+        });
+    }
+    // checks for valid image type
+    const avatarUrl = yield cloudinary_1.v2.uploader.upload(avatar, {
+        public_id: publicId,
+        invalidate: true
+    });
+    // cloudinary upload image fn with replacing the original one
+    try {
+        const updatedUser = yield prisma.user.update({
+            where: {
+                email
+            },
+            data: {
+                username,
+                avatar: avatarUrl.secure_url // cloudinary image
+            }
+        });
+        totalUsers.forEach((value, key) => {
+            if (value.active) {
+                value.WebSocket.send(JSON.stringify({
+                    type: "UPDATE_USERS",
+                    users: Array.from(totalUsers.entries())
+                        .filter(([id, data]) => id !== key)
+                        .map(([id, data]) => ({
+                        username: (id !== email) ? data.username : updatedUser.username, //add the optional logic for the username ((id!==email from body)?data.username:updatedUser.username)
+                        email: id,
+                        active: data.active,
+                        avatar: (id != email) ? data.avatar : updatedUser.avatar //for avatar as well
+                    }))
+                }));
+            }
+        });
+        const token = jsonwebtoken_1.default.sign({ email, username: updatedUser.username, avatar: updatedUser.avatar, publicId }, process.env.SecretKey, { expiresIn: '24h' });
+        // create a jwt token again in order to avoid inconsistencies while signing up.
+        console.log(token);
+        res.json({
+            "msg": "User Updated Successfully",
+            "token": token,
+        });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(403).json({
+            "msg": "Error occurred, check backend"
+        });
+    }
+}));
 /////// provide proper format to the messages like {type:"Error/Message", sender:null/someone, receiver:someone }
 const wss = new ws_1.WebSocketServer({ server });
-const totalUsers = new Map([]);
 wss.on("connection", function (socket, req) {
     return __awaiter(this, void 0, void 0, function* () {
         const token = req.headers["sec-websocket-protocol"];
