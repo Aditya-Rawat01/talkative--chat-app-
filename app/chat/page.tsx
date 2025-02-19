@@ -93,6 +93,7 @@ export default function Chat() {
         }
         
     }
+    console.log(individual?.avatar)
     return (
         <div className="h-screen w-screen bg-black">
             <div className="md:flex items-start justify-start">
@@ -100,7 +101,7 @@ export default function Chat() {
                 <div className={`${windowState?"hidden md:block":"block"} w-full md:w-[412px] lg:w-[500px] xl:w-[600px]`}><Topbar/></div>
                 <div className={`w-full flex items-center justify-center relative ${windowState?"hidden":"flex"} md:flex mt-10`}>
                     <input className={`bg-[#868686] text-white rounded-md w-[85%]  h-[40px] bg-opacity-25 focus:outline-none pl-8 sm:pl-10 `} placeholder="Search Users" onSubmit={(e)=>e.preventDefault()} onChange={(e)=>setActiveUsers(allUsersArr.current?.filter((index)=>index.email.startsWith(e.target.value)||index.username.startsWith(e.target.value)))}/>
-                    <Image src={Search} alt="searchIcon" className="w-[18px] absolute left-[9%]"/>
+                    <Image src={Search}  alt="searchIcon" className="w-[18px] absolute left-[9%]"/>
                 </div>
                 <div className={`w-full ${windowState?"h-full md:h-[calc(100vh-157px)]":"h-[calc(100vh-157px)]"} md:flex overflow-auto hide-scrollbar`}>
                     <div className={`w-full md:w-[412px] lg:w-[500px] xl:w-[600px] h-full flex flex-col items-center gap-2 ${!windowState?"pt-3":"md:pt-3"}`}>
@@ -119,7 +120,7 @@ export default function Chat() {
                                 <div className="absolute w-full z-20 text-white">
                                 <div className="h-16 w-full flex items-center justify-center relative text-2xl bg-white text-black shadow-md shadow-gray-500 rounded-b-[50px]">
                                 <div className="w-10 h-10 rounded-full absolute left-[10%] drop-shadow-custom overflow-hidden bg-red-600">
-                                <Image src={individual?.avatar as string} alt="placeholder" className="w-[40px] h-[41px]"/></div>
+                                <Image src={(individual?.avatar!=="placeholder" && individual?.avatar)?individual.avatar:placeholder} width={90} height={90} alt="placeholder" className="w-[40px] h-[41px]"/></div>
                                     {individual?.username}
                                     {<span className={` text-sm absolute bottom-0 ${((activeUsers?.find((key:any,value)=>key.email===individual?.email)?.active))?"text-[#3aad20]":"text-gray-600"}`}>{(activeUsers?.find((key:any,value)=>key.email===individual?.email)?.active)?"online":"offline"}</span>}
                                 <Image src={cancel} alt="cancel" onClick={()=>setWindowstate(false)} className="w-8 right-6 top-1/3 absolute cursor-pointer"/>
@@ -154,8 +155,8 @@ export default function Chat() {
                             />
                             <div className="absolute z-20 w-full h-full text-white">
                                 <div className="h-16 w-full flex items-center justify-center relative text-2xl bg-white text-black shadow-md shadow-gray-500 rounded-b-[50px]">
-                                <div className="w-10 h-10 rounded-full absolute left-[10%] drop-shadow-custom">
-                                <Image src={individual?.avatar as string} alt="placeholder" className="w-[40px] h-[41px]"/></div>
+                                <div className="w-10 h-10 rounded-full absolute left-[10%] drop-shadow-custom overflow-hidden">
+                                <Image src={(individual?.avatar!=="placeholder" && individual?.avatar)?individual.avatar:placeholder} width={90} height={90} alt="placeholder" className="w-[40px] h-[41px]"/></div>
                                     {individual?.username}
                                     {<span className={` text-sm absolute bottom-0 ${((activeUsers?.find((key:any,value)=>key.email===individual?.email)?.active))?"text-[#3aad20]":"text-gray-600"}`}>{(activeUsers?.find((key:any,value)=>key.email===individual?.email)?.active)?"online":"offline"}</span>}
                                 <Image src={cancel} alt="cancel" onClick={()=>setWindowstate(false)} className="w-8 right-6 top-1/3 absolute cursor-pointer"/>
