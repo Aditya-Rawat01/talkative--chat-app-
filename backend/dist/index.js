@@ -261,7 +261,11 @@ wss.on("connection", function (socket, req) {
                     createdAt: "asc"
                 }
             });
-            socket.send(JSON.stringify({ type: "offlineMessages", message: offlineMessages }));
+            const offlineMsg = offlineMessages.map((index) => {
+                const time = index.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                return Object.assign(Object.assign({}, index), { time });
+            });
+            socket.send(JSON.stringify({ type: "offlineMessages", message: offlineMsg }));
             // socket.send({}) //// we have to convert the object into strings as well ..it sends strings only
             totalUsers.forEach((value, key) => {
                 if (value.active) {
@@ -284,6 +288,8 @@ wss.on("connection", function (socket, req) {
                     socket.send(JSON.stringify({ type: "error", message: "Receiver or content is missing" }));
                     return;
                 }
+                const date = new Date();
+                const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
                 try {
                     const message = yield prisma.messages.create({
                         data: {
@@ -295,7 +301,7 @@ wss.on("connection", function (socket, req) {
                     const receiver = messageObj.receiver;
                     totalUsers.forEach((value, key) => __awaiter(this, void 0, void 0, function* () {
                         if (key === receiver || key === messageObj.sender) {
-                            value.WebSocket.send(JSON.stringify({ type: "message", message: messageObj.content, receiver: messageObj.receiver, sender: messageObj.sender }));
+                            value.WebSocket.send(JSON.stringify({ type: "message", message: messageObj.content, receiver: messageObj.receiver, sender: messageObj.sender, time: time }));
                             return;
                         }
                     }));

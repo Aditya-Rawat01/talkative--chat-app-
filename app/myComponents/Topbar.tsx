@@ -14,11 +14,11 @@ export default function Topbar() {
     const [username, setUsername] = useState("");
     const currentName=useRef<string>('')
     const currentAvatar=useRef<string>('')
-    const token=useRef<string>(sessionStorage.getItem("token"))
+    const token=useRef<string>('')
     const email=useRef(null)
     const {mutate, isPending}=updateUserHook()
     useEffect(()=>{
-        
+        token.current=sessionStorage.getItem("token") as string
         if (!token.current) {
             <div>"Error Occurred. Sign in Later"</div>
             return}
@@ -35,9 +35,12 @@ export default function Topbar() {
             
         onSuccess:(data)=>{
             
-            token.current=sessionStorage.getItem("token")
+            token.current=sessionStorage.getItem("token") as string
             toast.success(data)
             
+        },
+        onError:(error)=>{
+            toast.error(error as unknown as string)
         }
     })
     }

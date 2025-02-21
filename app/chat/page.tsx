@@ -31,7 +31,7 @@ export default function Chat() {
         sender: string;
         receiver: string;
         content: string;
-        createdAt: Date;
+        time: string;
     }[]|undefined>()
     const [activeUsers,setActiveUsers]=useState<activeUsers[]>()
     const allUsersArr=useRef<activeUsers[]|null>(null) // for search functionality
@@ -55,7 +55,7 @@ export default function Chat() {
                 setMessages(content.message)
             }
             else if (content.type==="message") { // handle realtime messages
-                setMessages((prev)=>[...(prev??[]),{id:content.id,content:content.message,sender:content.sender,receiver:content.receiver,createdAt:content.createdAt}])
+                setMessages((prev)=>[...(prev??[]),{id:content.id,content:content.message,sender:content.sender,receiver:content.receiver,time:content.time}])
             }
             else if(content.type==="UPDATE_USERS") {
                 setActiveUsers(content.users)
@@ -81,19 +81,16 @@ export default function Chat() {
     
     function SendMessage() {
         if (text.trim()!=="") {
-            const date=new Date()
-            const hrs=date.getHours()
-            const min=date.getMinutes()
+            
             const senderToken=sessionStorage.getItem("token")
             const senderObj:any=jwt.decode(senderToken as string)
             const sender=senderObj?.email
-            socket?.send(JSON.stringify({type:"message",content:text,sender:sender,receiver:individual?.email,time:hrs+":"+min}))
+            socket?.send(JSON.stringify({type:"message",content:text,sender:sender,receiver:individual?.email}))
             setText("")
             
         }
         
     }
-    console.log(individual?.avatar)
     return (
         <div className="h-screen w-screen bg-black">
             <div className="md:flex items-start justify-start">
@@ -127,8 +124,12 @@ export default function Chat() {
                                 </div>
                                 
                                 <div className="h-[calc(100vh-128px)] overflow-auto scroll-smooth hide-scrollbar">
-                                {individualMessages?.map((index,num)=><div key={num} className={`p-1 w-full  text-black flex px-2  ${index.sender===individual?.email?"justify-start ":"justify-end "}`}>
-                                    <p className={`p-2  rounded-full text-wrap max-w-[85%] bg-white shadow-md outline outline-1 ${index.receiver===individual?.email?"ps-3 rounded-br-none shadow-[#3E98FF] outline-[#3E98FF]":"shadow-[#FF6F6F] outline-[#FF6F6F] rounded-bl-none"}`}>{index.content}</p>
+                                {individualMessages?.map((index,num)=><div key={num} className={`p-1 w-full  text-black flex px-2 relative  ${index.sender===individual?.email?"justify-start ":"justify-end "}`}>
+                                    <div className={`p-2  rounded-full text-wrap max-w-[85%] bg-white shadow-md outline outline-1 ${index.receiver===individual?.email?"ps-3 rounded-br-none shadow-[#3E98FF] outline-[#3E98FF]":"shadow-[#FF6F6F] outline-[#FF6F6F] rounded-bl-none"}`}>
+                                        <p>{index.content}</p>
+                                        <p className={`text-[10px] ${index.receiver===individual?.email?"place-self-end":"place-self-start"}`}>{index.time}</p>
+                                    </div>
+                                    
                                     </div>)}
                                     <div ref={observerDiv1} className="scroll-mt-10"></div>
                                 </div>
@@ -163,7 +164,10 @@ export default function Chat() {
                                 </div>
                                 <div className="h-[calc(100vh-128px)] overflow-auto scroll-smooth hide-scrollbar">
                                 {individualMessages?.map((index,num)=><div key={num} className={`p-1 w-full  text-black flex px-2 lg:px-5  ${index.sender===individual?.email?"justify-start ":"justify-end "}`}>
-                                    <p className={`p-2 pl-3 rounded-full text-wrap max-w-[85%] bg-white text-black shadow-md outline outline-1  ${index.receiver===individual?.email?"ps-3 rounded-br-none shadow-[#3E98FF] outline-[#3E98FF]":"shadow-[#FF6F6F] rounded-bl-none outline-[#FF6F6F]"}`}>{index.content}</p>
+                                    <div className={`p-2  rounded-full text-wrap max-w-[85%] bg-white shadow-md outline outline-1 ${index.receiver===individual?.email?"ps-3 rounded-br-none shadow-[#3E98FF] outline-[#3E98FF]":"shadow-[#FF6F6F] outline-[#FF6F6F] rounded-bl-none"}`}>
+                                        <p>{index.content}</p>
+                                        <p className={`text-[10px] ${index.receiver===individual?.email?"place-self-end":"place-self-start"}`}>{index.time}</p>
+                                    </div>
                                     </div>)}
      {/**/}                           <div ref={observerDiv2} className="scroll-mt-10"></div>
                                 </div>
