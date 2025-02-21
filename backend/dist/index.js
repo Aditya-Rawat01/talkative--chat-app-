@@ -22,8 +22,13 @@ const ws_1 = require("ws");
 require('dotenv').config();
 const app = (0, express_1.default)();
 const prisma = new client_1.PrismaClient();
-app.use(express_1.default.json());
-app.use((0, cors_1.default)());
+app.use((0, cors_1.default)({
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
+app.use(express_1.default.json({ limit: '50mb' }));
 const totalUsers = new Map([]);
 const server = app.listen(5000);
 app.get("/", (req, res) => {
@@ -47,7 +52,6 @@ function imageUploader(avatar) {
             return { avatarUrl: result.secure_url, publicId: result.public_id };
         }
         catch (error) {
-            console.log(error);
             throw new Error('Failed to upload the image'); // do res.json
         }
     });
@@ -79,9 +83,17 @@ app.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         let avatarUrl = "placeholder";
         let publicId = "";
         if (avatar) {
-            let val = yield imageUploader(avatar);
-            avatarUrl = val.avatarUrl;
-            publicId = val.publicId;
+            try {
+                let val = yield imageUploader(avatar);
+                avatarUrl = val.avatarUrl;
+                publicId = val.publicId;
+            }
+            catch (error) {
+                res.status(300).json({
+                    "msg": error
+                });
+                return;
+            }
         }
         try {
             const user = yield prisma.user.create({
@@ -153,7 +165,6 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             }
         }
         catch (error) {
-            console.log(error);
             res.status(500).json({
                 "msg": "Internal Server Error. Please Try Again Later"
             });
@@ -162,17 +173,31 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
 }));
 app.post("/update", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { avatar, username, email, publicId } = req.body;
-    if (!avatar || !username || !email || !publicId) {
-        res.status(411).json({
-            "msg": "Avatar or username is missing."
+    let { avatar, username, email, publicId } = req.body;
+    if (!avatar || !username || !email || (publicId == null || undefined)) {
+        res.status(403).json({
+            "msg": "Avatar or username is missing.",
+            "avatar": avatar,
+            "publicId": publicId
         });
+        return;
     }
     // checks for valid image type
-    const avatarUrl = yield cloudinary_1.v2.uploader.upload(avatar, {
-        public_id: publicId,
-        invalidate: true
-    });
+    let avatarUrl = "placeholder";
+    try {
+        const uploadAvatar = yield cloudinary_1.v2.uploader.upload(avatar, {
+            public_id: publicId,
+            invalidate: true
+        });
+        avatarUrl = uploadAvatar.secure_url;
+        publicId = uploadAvatar.public_id;
+    }
+    catch (error) {
+        res.status(500).json({
+            "msg": error
+        });
+        return;
+    }
     // cloudinary upload image fn with replacing the original one
     try {
         const updatedUser = yield prisma.user.update({
@@ -181,7 +206,8 @@ app.post("/update", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             },
             data: {
                 username,
-                avatar: avatarUrl.secure_url // cloudinary image
+                avatar: avatarUrl, // cloudinary image
+                publicId
             }
         });
         totalUsers.forEach((value, key) => {
@@ -201,14 +227,12 @@ app.post("/update", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         });
         const token = jsonwebtoken_1.default.sign({ email, username: updatedUser.username, avatar: updatedUser.avatar, publicId }, process.env.SecretKey, { expiresIn: '24h' });
         // create a jwt token again in order to avoid inconsistencies while signing up.
-        console.log(token);
         res.json({
             "msg": "User Updated Successfully",
             "token": token,
         });
     }
     catch (error) {
-        console.log(error);
         res.status(403).json({
             "msg": "Error occurred, check backend"
         });

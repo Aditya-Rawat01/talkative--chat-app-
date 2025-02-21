@@ -8,9 +8,14 @@ import { WebSocket, WebSocketServer } from 'ws'
 require('dotenv').config();
 const app=express()
 const prisma=new PrismaClient()
-app.use(express.json())
-app.use(cors())
 
+app.use(cors({
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}))
+app.use(express.json({limit: '50mb'}))
 const totalUsers= new Map<string,{WebSocket:WebSocket,active:boolean,username:string,avatar:string}>([])
 
 
@@ -36,7 +41,6 @@ async function imageUploader(avatar:string) {
         
         return {avatarUrl:result.secure_url,publicId:result.public_id}  
     } catch (error) {
-        console.log(error)
         throw new Error('Failed to upload the image') // do res.json
         
     }
@@ -69,9 +73,17 @@ app.post("/signup",async (req,res)=>{
         let avatarUrl="placeholder"
         let publicId=""
         if (avatar) {
-            let val=await imageUploader(avatar)
-            avatarUrl=val.avatarUrl
-            publicId=val.publicId
+            try {
+                let val=await imageUploader(avatar)
+                avatarUrl=val.avatarUrl
+                publicId=val.publicId
+            } catch (error) {
+                res.status(300).json({
+                    "msg":error
+                })   
+                return
+            }
+            
         }
     
     try {
@@ -143,7 +155,6 @@ app.post("/signin",async(req,res)=>{
                  
             }   
        } catch (error) {
-        console.log(error)
           res.status(500).json({
            "msg":"Internal Server Error. Please Try Again Later"
           })
@@ -153,16 +164,31 @@ app.post("/signin",async(req,res)=>{
 })
 
 app.post("/update",async(req,res)=>{
-    const {avatar, username, email,publicId}=req.body
-    if (!avatar || !username || !email || !publicId) {
-        res.status(411).json({
-        "msg":"Avatar or username is missing."
-    })}
-    // checks for valid image type
-    const avatarUrl=await cloudinary.uploader.upload(avatar,{
-        public_id:publicId,
-        invalidate:true
+    let {avatar, username, email,publicId}=req.body
+    if (!avatar || !username || !email || (publicId==null||undefined)) {
+        res.status(403).json({
+        "msg":"Avatar or username is missing.",
+        "avatar":avatar,
+        "publicId":publicId
     })
+    return
+}
+    // checks for valid image type
+    let avatarUrl="placeholder"
+    try {
+        const uploadAvatar=await cloudinary.uploader.upload(avatar,{
+            public_id:publicId,
+            invalidate:true
+        })
+        avatarUrl=uploadAvatar.secure_url
+        publicId=uploadAvatar.public_id 
+    } catch (error) {
+        res.status(500).json({
+            "msg":error
+        })
+        return
+    }
+    
     
 // cloudinary upload image fn with replacing the original one
 try {
@@ -172,7 +198,8 @@ try {
         }, 
         data:{
             username,
-            avatar:avatarUrl.secure_url // cloudinary image
+            avatar:avatarUrl,// cloudinary image
+            publicId
         }
     })
     totalUsers.forEach((value,key) => {
@@ -192,14 +219,12 @@ try {
     });
     const token=jwt.sign({email,username:updatedUser.username,avatar:updatedUser.avatar,publicId},process.env.SecretKey as string,{expiresIn:'24h'})
     // create a jwt token again in order to avoid inconsistencies while signing up.
-    console.log(token)
     res.json({
         "msg":"User Updated Successfully",
         "token":token,
         
     })
 } catch (error) {
-    console.log(error)
     res.status(403).json({
         "msg":"Error occurred, check backend"
     })
