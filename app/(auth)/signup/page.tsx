@@ -7,6 +7,9 @@ import { FormEvent, useCallback, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form"
 import {useDropzone} from 'react-dropzone'
 import { toast } from "sonner"
+import placeholder from "@/public/profile.png"
+import signupImage from "@/public/signup.jpg"
+import bg from "@/public/chatbg.jpg"
 type formFields ={
     email:string,
     username:string,
@@ -56,15 +59,19 @@ export default function Signup() {
     
     
     return (
-    <div>
-        <p>Signup</p>
-        <form onSubmit={handleSubmit(onsubmit)} className="h-[500px] bg-red-400 flex flex-col items-center justify-center">
+      <div className="flex items-center justify-center h-screen md:relative">
+      <div className="w-full h-full text-black relative md:w-1/2 md:h-full bg-gradient-to-r from-lime-500 via-green-500 to-sky-500 md:rounded-none">
+      <div className="w-full h-full">
+        <Image src={bg} alt="image" className="opacity-30 absolute -z-0 w-full h-full"/>
+        <form onSubmit={handleSubmit(onsubmit)} className="h-full flex flex-col items-center justify-around relative backdrop-blur-[1px]">
+        <p className="text-4xl font-medium">Signup</p>
+            <div className=" rounded-xl flex flex-col items-center justify-around h-[200px]">
+            <div className="w-[130px] h-[130px] rounded-full overflow-hidden outline outline-2 outline-yellow-400">
+                {<Image alt="profilePic" width={100} height={100} src={(preview as string)?preview as string:placeholder as unknown as string} className="w-full h-full "/>}
+            </div>
             <label>Set an Avatar</label>
-            <div className="bg-white rounded-xl flex flex-col items-center justify-around h-[200px]">
-                {preview?<div className="w-[150px] h-[150px] rounded-full overflow-hidden">
-                    <img src={preview as string} className="w-full h-full"/>
-                </div>:<div className="w-[150px] h-[150px] rounded-full bg-gray-500"></div>}
-                <div {...getRootProps()} className="bg-red-300">
+
+                <div {...getRootProps()} className="outline outline-1 outline-white p-2 rounded-full  cursor-pointer">
                         <input {...getInputProps()}/>
                         {
                             isDragActive ?
@@ -73,15 +80,27 @@ export default function Signup() {
                         }
                     </div>
             </div>
-            <label>Email</label>
-            <input {...register("email")} type='text'  className="w-56 p-2" required/>
-            <label>Username</label>
-            <input {...register("username")} type='text' className="w-56 p-2" required/>
-            <label>Password</label>
-            <input {...register("password")} type='text'  className="w-56 p-2" required/>
-            <button type='submit' className="w-56 bg-black text-white p-2" disabled={isPending}>{isPending?"Submitting...":"Submit"}</button> 
+            <div className="flex gap-2 items-center justify-between w-[285px]">
+            <label className="pl-5">Email: </label>
+            <input {...register("email")} type='text'  className="w-48 p-2 rounded-lg" required/>
+            </div>
+            <div className="flex gap-2 items-center justify-between w-[285px]">
+            <label>Username:</label>
+            <input {...register("username")} type='text' className="w-48 p-2 rounded-lg" required/>
+            </div>
+            <div className="flex gap-2 items-center justify-between w-[285px]">
+            <label>Password: </label>
+            <input {...register("password")} type='text'  className="w-48 p-2 rounded-lg" required/>
+            </div>
+            <button type='submit' className="w-[285px] bg-black text-white  p-2 rounded-lg" disabled={isPending}>{isPending?"Submitting...":"Submit"}</button> 
+            <p>Signed up Already? Try <Link href={"/signin"} className="underline">Signing In</Link></p>   
+            
         </form>
-        <p>Signed up Already? Try <Link href={"/signin"} className="underline">Signing In</Link></p>   
+    </div>
+    </div> 
+    <div className="hidden md:block -z-10 md:w-1/2 h-screen">
+      <Image src={signupImage} alt="signupImage" className="w-full h-full"/>
+    </div>
     </div>
     )
 }
