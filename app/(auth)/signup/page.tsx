@@ -85,3 +85,81 @@ export default function Signup() {
     </div>
     )
 }
+
+
+/*"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import Link from "next/link"
+import { MessageCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+
+export default function SignInPage() {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsLoading(true)
+    // Add your sign-in logic here
+    setTimeout(() => setIsLoading(false), 1000)
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-muted/50">
+      <Link href="/" className="flex items-center space-x-2 mb-8">
+        <MessageCircle className="h-6 w-6" />
+        <span className="font-bold text-xl">ChatProject</span>
+      </Link>
+
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
+          <CardDescription>Enter your credentials to access your account</CardDescription>
+        </CardHeader>
+        <form onSubmit={onSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" placeholder="john@example.com" type="email" required disabled={isLoading} />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+              <Input id="password" type="password" required disabled={isLoading} />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button className="w-full" type="submit" disabled={isLoading}>
+              {isLoading ? "Signing in..." : "Sign in"}
+            </Button>
+            <div className="flex items-center space-x-2">
+              <div className="flex-1 h-px bg-muted-foreground/20" />
+              <span className="text-sm text-muted-foreground">OR</span>
+              <div className="flex-1 h-px bg-muted-foreground/20" />
+            </div>
+            <Button variant="outline" className="w-full" type="button">
+              Continue with Google
+            </Button>
+            <p className="text-sm text-muted-foreground text-center">
+              Don't have an account?{" "}
+              <Link href="/sign-up" className="text-primary hover:underline">
+                Sign up
+              </Link>
+            </p>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
+  )
+}
+
+*/
