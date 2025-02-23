@@ -20,7 +20,8 @@ app.use(express.json({limit: '50mb'}))
 const totalUsers= new Map<string,{WebSocket:WebSocket,active:boolean,username:string,avatar:string}>([])
 
 
-const server=app.listen(5000)
+const port = process.env.PORT || 5000;
+const server = app.listen(port);
 app.get("/",(req,res)=>{
     res.json({
         "msg":"hello"
