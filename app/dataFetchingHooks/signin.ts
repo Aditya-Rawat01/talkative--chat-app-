@@ -12,7 +12,6 @@ async function signin(data:{username:string,email:string,password:string}) {
             sessionStorage.setItem("token",res.data.token)
         return res.data.msg  
     } catch (error:any) {
-        console.log(error.response.data.msg)
         throw new Error(error.response.data.msg || "Signin Failed. Please Try Again")
     }
     }
