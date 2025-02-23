@@ -36,10 +36,19 @@ export default function Chat() {
     const [activeUsers,setActiveUsers]=useState<activeUsers[]>()
     const allUsersArr=useRef<activeUsers[]|null>(null) // for search functionality
     const observerDiv1=useRef<HTMLDivElement>(null)
-    const observerDiv2=useRef<HTMLDivElement>(null)    
+    const observerDiv2=useRef<HTMLDivElement>(null)
+    function expireToken(token:string) {
+        const tokenObj:any=jwt.decode(token)
+        const expiry=tokenObj?.exp*1000
+        return Date.now()>=expiry
+    }    
     useEffect(()=>{
         const token=sessionStorage.getItem("token")
-        if (!token) {
+        
+        if (expireToken(token as string)) {
+            sessionStorage.removeItem("token")
+        }
+        if (!sessionStorage.getItem("token") || !token) {
             requestAnimationFrame(()=>toast("No token found. Redirecting to home page"))
             router.push("/")
             return

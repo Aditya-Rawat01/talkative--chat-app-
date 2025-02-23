@@ -95,7 +95,7 @@ app.post("/signup",async (req,res)=>{
                 avatar:avatarUrl,
                 publicId
             }})
-        const token=jwt.sign({email,username,avatar:user.avatar,publicId},process.env.SecretKey as string,{expiresIn:'24h'})
+        const token=jwt.sign({email,username,avatar:user.avatar,publicId},process.env.SecretKey as string,{expiresIn:'7d'})
         res.json({
             "msg":"Signed up successfully.",
             "token":token

@@ -24,7 +24,6 @@ export default function Signup() {
 
     const onsubmit:SubmitHandler<formFields>=async(data)=>{
         data.avatar=preview?(preview as string):null
-        console.log(data)
         const loadingToast=toast.loading("Loading...",{dismissible:true})
        mutate(data,{
         onSuccess:(data)=>{
@@ -43,7 +42,6 @@ export default function Signup() {
         const file=new FileReader;
         
         file.onload=()=>{
-            console.log(acceptedFiles[0])
             setPreview(file.result)
         }
         file.readAsDataURL(acceptedFiles[0])
@@ -63,7 +61,7 @@ export default function Signup() {
       <div className="w-full h-full text-black relative md:w-1/2 md:h-full bg-gradient-to-r from-lime-500 via-green-500 to-sky-500 md:rounded-none">
       <div className="w-full h-full">
         <Image src={bg} alt="image" className="opacity-30 absolute -z-0 w-full h-full"/>
-        <form onSubmit={handleSubmit(onsubmit)} className="h-full flex flex-col items-center justify-around relative backdrop-blur-[1px]">
+        <form onSubmit={handleSubmit(onsubmit)} className="h-full flex flex-col items-center justify-around relative">
         <p className="text-4xl font-medium">Signup</p>
             <div className=" rounded-xl flex flex-col items-center justify-around h-[200px]">
             <div className="w-[130px] h-[130px] rounded-full overflow-hidden outline outline-2 outline-yellow-400">

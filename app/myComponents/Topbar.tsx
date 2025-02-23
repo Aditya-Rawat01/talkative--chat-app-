@@ -29,7 +29,6 @@ export default function Topbar() {
         currentName.current=decoded.username
     },[token.current])
     function setProfile() {
-        console.log("name")
         const decoded:any=jwt.decode(token.current as string)
         mutate({username,email:decoded?.email,avatar:myAvatar as string,publicId:decoded.publicId},{
             
@@ -55,7 +54,6 @@ export default function Topbar() {
             const file=new FileReader;
             
             file.onload=()=>{
-                console.log(acceptedFiles[0])
                 setMyAvatar(file.result as string)
             }
             file.readAsDataURL(acceptedFiles[0])
