@@ -5,14 +5,14 @@ import Link from "next/link";
     <Link href={"/signin"}>Signin</Link>
     </div> */}
 import Prisma from "@/public/prisma.png"
-import Mongodb from "@/public/mongodb.svg"
+import Mongodb from "@/public/MongoDB.svg"
 import websockets from "@/public/ws.svg"
 import ReactQuery from "@/public/reactQuery.png"
 import cloud from "@/public/Cloudinary.svg"
 import { Button } from "@/components/ui/button"
 import express from "@/public/express.svg"
 import next from "@/public/nextjs.svg"
-import { Github, Twitter, Linkedin, MessageCircle, Upload, UserCircle, ArrowRight } from "lucide-react"
+import { MessageCircle, UserCircle, ArrowRight } from "lucide-react"
 import { AvatarUpload } from "./myComponents/upload";
 import { Message } from "./myComponents/message";
 import ss from "@/public/ss.png"
