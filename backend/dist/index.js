@@ -22,12 +22,13 @@ const ws_1 = require("ws");
 require('dotenv').config();
 const app = (0, express_1.default)();
 const prisma = new client_1.PrismaClient();
-app.use((0, cors_1.default)({
-    origin: 'http://localhost:3000',
+app.use((0, cors_1.default)());
+/*{
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
-}));
+}*/
 app.use(express_1.default.json({ limit: '50mb' }));
 const totalUsers = new Map([]);
 const server = app.listen(5000);
@@ -105,7 +106,7 @@ app.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                     publicId
                 }
             });
-            const token = jsonwebtoken_1.default.sign({ email, username, avatar: user.avatar, publicId }, process.env.SecretKey, { expiresIn: '24h' });
+            const token = jsonwebtoken_1.default.sign({ email, username, avatar: user.avatar, publicId }, process.env.SecretKey, { expiresIn: '7d' });
             res.json({
                 "msg": "Signed up successfully.",
                 "token": token
