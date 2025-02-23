@@ -5,9 +5,10 @@ import Image from "next/image"
 import Settings from "@/public/settings.png"
 import placeholder from "@/public/profile.png"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { updateUserHook } from "../dataFetchingHooks/update"
+import { useUpdateUserHook } from "../dataFetchingHooks/update"
 import { toast } from "sonner"
 import { useDropzone } from "react-dropzone"
+import { useRouter } from "next/navigation"
 export default function Topbar() {
     const [settings,setSettings]=useState(false)
     const [myAvatar,setMyAvatar]=useState<ArrayBuffer|string>('')
@@ -16,11 +17,13 @@ export default function Topbar() {
     const currentAvatar=useRef<string>('')
     const token=useRef<string>('')
     const email=useRef(null)
-    const {mutate, isPending}=updateUserHook()
+    const {mutate, isPending}=useUpdateUserHook()
+    const router=useRouter()
     useEffect(()=>{
         token.current=sessionStorage.getItem("token") as string
         if (!token.current) {
-            <div>"Error Occurred. Sign in Later"</div>
+            requestAnimationFrame(()=>toast("No token found. Redirecting to home page"))
+            router.push("/")
             return}
         const decoded:any=jwt.decode(token.current as string)
         setMyAvatar(decoded?.avatar)
@@ -72,14 +75,14 @@ export default function Topbar() {
         setMyAvatar(currentAvatar.current)
     }
     return (
-        <div className="w-full max-h-screen relative z-50 h-[65px] font-primary font-bold text-2xl md:text-3xl bg-[#17BEBB] flex justify-between p-2 md:p-4 items-center ">
+        <div className="w-full max-h-screen relative z-50 h-[65px] font-primary font-bold text-2xl md:text-3xl bg-[#17BEBB] flex justify-between p-2 md:p-4 items-center">
             <div className="flex gap-2 items-end">
                 <Image src={Icon} alt="icon" className="w-[50px]"/>
                 <p>Talkative</p>
             </div>
             <Image src={Settings} alt="icon" className={`w-[20px] mr-2 cursor-pointer transition-all duration-1000 ${!settings?"rotate-90":"rotate-0"}`} onClick={()=>setSettings((prev)=>!prev)}/>
             {
-            <div className={`absolute transition-all duration-1000 bg-[#17BEBB]  left-0 h-[calc(100vh-65px)] w-full top-[65px] origin-top-right -z-10 ${!settings?"rotate-90 ":"rotate-0"}`}>
+            <div className={`absolute transition-all duration-1000 bg-[#17BEBB]  left-0 h-[calc(100vh-65px)] w-full top-[65px] origin-top-right -z-10 ${!settings?"rotate-90":"rotate-0"}`}>
                 <div className="w-full h-[52px] md:h-[68px] bg-white flex items-center justify-center font-medium">Settings</div>
                 {<div className="w-full flex flex-col font-medium items-center justify-center">
                     <Image src={((myAvatar as string)!=="placeholder" && myAvatar as string)?myAvatar as string:placeholder} height={2000} width={2000} alt="avatar" className="border-2 border-white rounded-full h-32 w-32 mt-2"/>
@@ -95,7 +98,7 @@ export default function Topbar() {
                     <div className="flex flex-col items-center gap-2">
                     <label>New Avatar</label>
                     
-                    <div {...getRootProps()} className="bg-red-300">
+                    <div {...getRootProps()} className="outline text-white outline-1 outline-white rounded-full p-1 cursor-pointer">
                         <input {...getInputProps()}/>
                         {
                             isDragActive ?

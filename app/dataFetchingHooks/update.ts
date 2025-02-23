@@ -18,7 +18,7 @@ async function updateUser({username,email,avatar,publicId}:{username:string,emai
     }
     }
 
-export function updateUserHook() {
+export function useUpdateUserHook() {
     return useMutation({
         mutationKey:["update"],
         mutationFn:updateUser
