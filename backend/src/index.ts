@@ -9,12 +9,13 @@ require('dotenv').config();
 const app=express()
 const prisma=new PrismaClient()
 
-app.use(cors({
+app.use(cors())
+/*{
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
-}))
+}*/
 app.use(express.json({limit: '50mb'}))
 const totalUsers= new Map<string,{WebSocket:WebSocket,active:boolean,username:string,avatar:string}>([])
 
