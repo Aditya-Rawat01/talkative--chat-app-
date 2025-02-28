@@ -11,7 +11,7 @@ const prisma=new PrismaClient()
 
 app.use(cors(
 {
-    origin: 'https://talkative-chat-app-steel.vercel.app/',
+    origin: 'https://talkative-chat-app-steel.vercel.app',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
