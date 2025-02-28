@@ -31,7 +31,8 @@ app.use((0, cors_1.default)());
 }*/
 app.use(express_1.default.json({ limit: '50mb' }));
 const totalUsers = new Map([]);
-const server = app.listen(5000);
+const port = process.env.PORT || 5000;
+const server = app.listen(port);
 app.get("/", (req, res) => {
     res.json({
         "msg": "hello"
