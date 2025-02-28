@@ -125,7 +125,7 @@ export default function Chat() {
                             />
                                 <div className="absolute w-full z-20 text-white">
                                 <div className="h-16 w-full flex items-center justify-center relative text-2xl bg-white text-black shadow-md shadow-gray-500 rounded-b-[50px] ">
-                                <div className="w-10 h-10 rounded-full absolute left-[10%] drop-shadow-custom overflow-hidden bg-red-600 outline outline-1 outline-purple-500">
+                                <div className="w-10 h-10 rounded-full absolute left-[10%] drop-shadow-custom overflow-hidden outline outline-1 outline-purple-500">
                                 <Image src={(individual?.avatar!=="placeholder" && individual?.avatar)?individual.avatar:placeholder} width={90} height={90} alt="placeholder" className="w-[40px] h-[41px]"/></div>
                                     {individual?.username}
                                     {<span className={` text-sm absolute bottom-0 ${((activeUsers?.find((key:any,value)=>key.email===individual?.email)?.active))?"text-[#3aad20]":"text-gray-600"}`}>{(activeUsers?.find((key:any,value)=>key.email===individual?.email)?.active)?"online":"offline"}</span>}
