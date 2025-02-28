@@ -204,6 +204,9 @@ try {
             publicId
         }
     })
+    const user=totalUsers.get(email)
+        user!.username=updatedUser.username
+        user!.avatar=updatedUser.avatar
     totalUsers.forEach((value,key) => {
         if (value.active) {
             value.WebSocket.send(JSON.stringify({
@@ -211,10 +214,10 @@ try {
                 users: Array.from(totalUsers.entries())
                 .filter(([id, data]) => id!==key)
                 .map(([id, data]) => ({
-                    username:(id!==email)?data.username:updatedUser.username, //add the optional logic for the username ((id!==email from body)?data.username:updatedUser.username)
+                    username:data.username, //add the optional logic for the username ((id!==email from body)?data.username:updatedUser.username)
                     email:id,
                     active: data.active,
-                    avatar:(id!=email)?data.avatar:updatedUser.avatar //for avatar as well
+                    avatar:data.avatar //for avatar as well
                 }))
             }));
         }    
@@ -320,15 +323,9 @@ wss.on("connection",async function(socket,req) {
         .find(([_, data]) => data.WebSocket === socket)?.[0];
     
     if (userEmail) {
-        totalUsers.set(userEmail, {
-            WebSocket: socket,
-            active: false,
-            username:(currentUser as JwtPayload).username,
-            avatar:(currentUser as JwtPayload).avatar
-        }
-    )
-       
-
+        const user=totalUsers.get(userEmail)
+        user!.active=false
+        console.log(user?.username)
         totalUsers.forEach((value, key) => {
             if (value.active) {
                 value.WebSocket.send(JSON.stringify({
@@ -342,10 +339,11 @@ wss.on("connection",async function(socket,req) {
                             avatar:data.avatar
                         }))
                 }));
+                
             }
         });
     }
-           //// remove this
+           
     })
     
     

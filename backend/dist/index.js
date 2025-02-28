@@ -23,7 +23,7 @@ require('dotenv').config();
 const app = (0, express_1.default)();
 const prisma = new client_1.PrismaClient();
 app.use((0, cors_1.default)({
-    origin: 'https://talkative-chat-app-steel.vercel.app',
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -211,6 +211,9 @@ app.post("/update", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 publicId
             }
         });
+        const user = totalUsers.get(email);
+        user.username = updatedUser.username;
+        user.avatar = updatedUser.avatar;
         totalUsers.forEach((value, key) => {
             if (value.active) {
                 value.WebSocket.send(JSON.stringify({
@@ -218,10 +221,10 @@ app.post("/update", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                     users: Array.from(totalUsers.entries())
                         .filter(([id, data]) => id !== key)
                         .map(([id, data]) => ({
-                        username: (id !== email) ? data.username : updatedUser.username, //add the optional logic for the username ((id!==email from body)?data.username:updatedUser.username)
+                        username: data.username, //add the optional logic for the username ((id!==email from body)?data.username:updatedUser.username)
                         email: id,
                         active: data.active,
-                        avatar: (id != email) ? data.avatar : updatedUser.avatar //for avatar as well
+                        avatar: data.avatar //for avatar as well
                     }))
                 }));
             }
@@ -318,12 +321,9 @@ wss.on("connection", function (socket, req) {
                 const userEmail = (_a = Array.from(totalUsers.entries())
                     .find(([_, data]) => data.WebSocket === socket)) === null || _a === void 0 ? void 0 : _a[0];
                 if (userEmail) {
-                    totalUsers.set(userEmail, {
-                        WebSocket: socket,
-                        active: false,
-                        username: currentUser.username,
-                        avatar: currentUser.avatar
-                    });
+                    const user = totalUsers.get(userEmail);
+                    user.active = false;
+                    console.log(user === null || user === void 0 ? void 0 : user.username);
                     totalUsers.forEach((value, key) => {
                         if (value.active) {
                             value.WebSocket.send(JSON.stringify({
@@ -340,7 +340,6 @@ wss.on("connection", function (socket, req) {
                         }
                     });
                 }
-                //// remove this
             });
         }
         catch (error) {
