@@ -142,7 +142,7 @@ app.post("/signin",async(req,res)=>{
                     })
                     return
                 }
-                const token=jwt.sign({email,username:userFound.username,avatar:userFound.avatar,publicId:userFound.publicId},process.env.SecretKey as string,{expiresIn:'24h'})
+                const token=jwt.sign({email,username:userFound.username,avatar:userFound.avatar,publicId:userFound.publicId},process.env.SecretKey as string,{expiresIn:'7d'})
                 res.json({
                     "msg":"Signed in successfully.",
                     "token":token
@@ -260,11 +260,10 @@ wss.on("connection",async function(socket,req) {
         }
     })
     const offlineMsg=offlineMessages.map((index)=>{
-            const time:string=index.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit"})
-            return {...index,time}
+            const createdAt:string=index.createdAt.toISOString()
+            return {...index,createdAt}
         })
     socket.send(JSON.stringify({ type: "offlineMessages", message: offlineMsg}))
-    // socket.send({}) //// we have to convert the object into strings as well ..it sends strings only
     
     totalUsers.forEach((value,key) => {
         if (value.active) {
@@ -288,9 +287,7 @@ wss.on("connection",async function(socket,req) {
             socket.send(JSON.stringify({type:"error",message:"Receiver or content is missing"}))
             return
         }
-        const date=new Date()
         
-        const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
         try {
             const message=await prisma.messages.create({
                 data:{
@@ -303,7 +300,7 @@ wss.on("connection",async function(socket,req) {
         
             totalUsers.forEach(async(value,key)=>{
                 if (key===receiver || key===messageObj.sender) {
-                    value.WebSocket.send(JSON.stringify({type:"message", message:messageObj.content,receiver:messageObj.receiver,sender:messageObj.sender, time:time}))
+                    value.WebSocket.send(JSON.stringify({type:"message", message:messageObj.content,receiver:messageObj.receiver,sender:messageObj.sender, createdAt:message.createdAt.toISOString()}))
                     return
                 }
             })

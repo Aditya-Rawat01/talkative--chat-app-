@@ -31,7 +31,7 @@ export default function Chat() {
         sender: string;
         receiver: string;
         content: string;
-        time: string;
+        createdAt: string;
     }[]|undefined>()
     const [activeUsers,setActiveUsers]=useState<activeUsers[]>()
     const allUsersArr=useRef<activeUsers[]|null>(null) // for search functionality
@@ -61,10 +61,21 @@ export default function Chat() {
         ws.onmessage=(e)=>{
             const content=JSON.parse(e.data)
             if (content.type==="offlineMessages") { // handles offline messages
+                content.message.map((index:{
+                    createdAt: string;
+                    id: string;
+                    sender: string;
+                    receiver: string;
+                    content: string;
+                }
+                )=>{
+                    index.createdAt=new Date(index.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                })
                 setMessages(content.message)
             }
             else if (content.type==="message") { // handle realtime messages
-                setMessages((prev)=>[...(prev??[]),{id:content.id,content:content.message,sender:content.sender,receiver:content.receiver,time:content.time}])
+                const createdAt = new Date(content.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                setMessages((prev)=>[...(prev??[]),{id:content.id,content:content.message,sender:content.sender,receiver:content.receiver,createdAt}])
             }
             else if(content.type==="UPDATE_USERS") {
                 setActiveUsers(content.users)
@@ -136,7 +147,7 @@ export default function Chat() {
                                 {individualMessages?.map((index,num)=><div key={num} className={`p-1 w-full  text-black flex px-2 relative  ${index.sender===individual?.email?"justify-start ":"justify-end "}`}>
                                     <div className={`p-2  rounded-full text-wrap max-w-[85%] bg-white shadow-md outline outline-1 ${index.receiver===individual?.email?"ps-3 rounded-br-none shadow-[#3E98FF] outline-[#3E98FF]":"shadow-[#FF6F6F] outline-[#FF6F6F] rounded-bl-none"}`}>
                                         <p>{index.content}</p>
-                                        <p className={`text-[10px] ${index.receiver===individual?.email?"place-self-end":"place-self-start"}`}>{index.time}</p>
+                                        <p className={`text-[10px] ${index.receiver===individual?.email?"place-self-end":"place-self-start"}`}>{index.createdAt}</p>
                                     </div>
                                     
                                     </div>)}
@@ -175,7 +186,7 @@ export default function Chat() {
                                 {individualMessages?.map((index,num)=><div key={num} className={`p-1 w-full  text-black flex px-2 lg:px-5  ${index.sender===individual?.email?"justify-start ":"justify-end "}`}>
                                     <div className={`p-2  rounded-full text-wrap max-w-[85%] bg-white shadow-md outline outline-1 ${index.receiver===individual?.email?"ps-3 rounded-br-none shadow-[#3E98FF] outline-[#3E98FF]":"shadow-[#FF6F6F] outline-[#FF6F6F] rounded-bl-none"}`}>
                                         <p>{index.content}</p>
-                                        <p className={`text-[10px] ${index.receiver===individual?.email?"place-self-end":"place-self-start"}`}>{index.time}</p>
+                                        <p className={`text-[10px] ${index.receiver===individual?.email?"place-self-end":"place-self-start"}`}>{index.createdAt}</p>
                                     </div>
                                     </div>)}
      {/**/}                           <div ref={observerDiv2} className="scroll-mt-10"></div>

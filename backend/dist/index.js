@@ -22,13 +22,12 @@ const ws_1 = require("ws");
 require('dotenv').config();
 const app = (0, express_1.default)();
 const prisma = new client_1.PrismaClient();
-app.use((0, cors_1.default)());
-/*{
+app.use((0, cors_1.default)({
     origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
-}*/
+}));
 app.use(express_1.default.json({ limit: '50mb' }));
 const totalUsers = new Map([]);
 const port = process.env.PORT || 5000;
@@ -152,7 +151,7 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                     });
                     return;
                 }
-                const token = jsonwebtoken_1.default.sign({ email, username: userFound.username, avatar: userFound.avatar, publicId: userFound.publicId }, process.env.SecretKey, { expiresIn: '24h' });
+                const token = jsonwebtoken_1.default.sign({ email, username: userFound.username, avatar: userFound.avatar, publicId: userFound.publicId }, process.env.SecretKey, { expiresIn: '7d' });
                 res.json({
                     "msg": "Signed in successfully.",
                     "token": token
@@ -264,11 +263,10 @@ wss.on("connection", function (socket, req) {
                 }
             });
             const offlineMsg = offlineMessages.map((index) => {
-                const time = index.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-                return Object.assign(Object.assign({}, index), { time });
+                const createdAt = index.createdAt.toISOString();
+                return Object.assign(Object.assign({}, index), { createdAt });
             });
             socket.send(JSON.stringify({ type: "offlineMessages", message: offlineMsg }));
-            // socket.send({}) //// we have to convert the object into strings as well ..it sends strings only
             totalUsers.forEach((value, key) => {
                 if (value.active) {
                     value.WebSocket.send(JSON.stringify({
@@ -290,8 +288,6 @@ wss.on("connection", function (socket, req) {
                     socket.send(JSON.stringify({ type: "error", message: "Receiver or content is missing" }));
                     return;
                 }
-                const date = new Date();
-                const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
                 try {
                     const message = yield prisma.messages.create({
                         data: {
@@ -303,7 +299,7 @@ wss.on("connection", function (socket, req) {
                     const receiver = messageObj.receiver;
                     totalUsers.forEach((value, key) => __awaiter(this, void 0, void 0, function* () {
                         if (key === receiver || key === messageObj.sender) {
-                            value.WebSocket.send(JSON.stringify({ type: "message", message: messageObj.content, receiver: messageObj.receiver, sender: messageObj.sender, time: time }));
+                            value.WebSocket.send(JSON.stringify({ type: "message", message: messageObj.content, receiver: messageObj.receiver, sender: messageObj.sender, createdAt: message.createdAt.toISOString() }));
                             return;
                         }
                     }));
