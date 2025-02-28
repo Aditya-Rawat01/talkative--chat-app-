@@ -58,16 +58,16 @@ export default function Signup() {
     
     return (
       <div className="flex items-center justify-center h-screen md:relative">
-      <div className="w-full h-full text-black relative md:w-1/2 md:h-full bg-gradient-to-r from-lime-500 via-green-500 to-sky-500 md:rounded-none">
+      <div className="w-full h-full text-[#00154e] relative md:w-1/2 md:h-full bg-gradient-to-r from-lime-500 via-green-500 to-sky-500 md:rounded-none">
       <div className="w-full h-full">
         <Image src={bg} alt="image" className="opacity-30 absolute -z-0 w-full h-full"/>
-        <form onSubmit={handleSubmit(onsubmit)} className="h-full flex flex-col items-center justify-around relative">
+        <form onSubmit={handleSubmit(onsubmit)} className="h-[90%] flex flex-col items-center justify-around relative">
         <p className="text-4xl font-medium">Signup</p>
             <div className=" rounded-xl flex flex-col items-center justify-around h-[200px]">
             <div className="w-[130px] h-[130px] rounded-full overflow-hidden outline outline-2 outline-yellow-400">
                 {<Image alt="profilePic" width={100} height={100} src={(preview as string)?preview as string:placeholder as unknown as string} className="w-full h-full "/>}
             </div>
-            <label>Set an Avatar</label>
+            <label className="mt-1">Set an Avatar</label>
 
                 <div {...getRootProps()} className="outline outline-1 outline-white p-2 rounded-full  cursor-pointer">
                         <input {...getInputProps()}/>
