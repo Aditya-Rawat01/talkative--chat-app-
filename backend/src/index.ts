@@ -9,13 +9,13 @@ require('dotenv').config();
 const app=express()
 const prisma=new PrismaClient()
 
-app.use(cors())
-/*{
-    origin: '*',
+app.use(cors(
+{
+    origin: 'https://talkative-chat-app-steel.vercel.app/',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
-}*/
+}))
 app.use(express.json({limit: '50mb'}))
 const totalUsers= new Map<string,{WebSocket:WebSocket,active:boolean,username:string,avatar:string}>([])
 
