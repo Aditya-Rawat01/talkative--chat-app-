@@ -23,8 +23,8 @@ require('dotenv').config();
 const app = (0, express_1.default)();
 const prisma = new client_1.PrismaClient();
 app.use((0, cors_1.default)({
-    origin: '*',
-    methods: ['GET', 'POST'],
+    origin: 'https://talkative-chat-app-steel.vercel.app',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));

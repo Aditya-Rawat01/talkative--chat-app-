@@ -39,7 +39,7 @@ export default function Topbar() {
             
             token.current=sessionStorage.getItem("token") as string
             toast.success(data)
-            
+            setUsername('')
         },
         onError:(error)=>{
             toast.error(error as unknown as string)
@@ -65,6 +65,10 @@ export default function Topbar() {
             onDrop,
             maxSize:3*1024*1024,
             accept:{"image/*":[]},  
+            onError:(error)=>{
+                toast.error("Image size exceed 3MB")
+        
+              } , 
             onFileDialogCancel() {
                 setMyAvatar(currentAvatar.current)
             },

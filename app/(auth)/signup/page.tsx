@@ -49,7 +49,11 @@ export default function Signup() {
       const {getRootProps, getInputProps, isDragActive} = useDropzone({
         onDrop,
         maxSize:3*1024*1024,
-        accept:{"image/*":[]},  
+        accept:{"image/*":[]},
+      onError:(error)=>{
+        toast.error("Image size exceed 3MB")
+
+      } , 
         onFileDialogCancel() {
             setPreview(null)
         },
