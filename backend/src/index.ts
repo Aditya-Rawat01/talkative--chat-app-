@@ -325,7 +325,6 @@ wss.on("connection",async function(socket,req) {
     if (userEmail) {
         const user=totalUsers.get(userEmail)
         user!.active=false
-        console.log(user?.username)
         totalUsers.forEach((value, key) => {
             if (value.active) {
                 value.WebSocket.send(JSON.stringify({
